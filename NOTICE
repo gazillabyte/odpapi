@@ -1,0 +1,10 @@
+ODPAPI C helper library
+Copyright 2026 GazillaByte Pty Ltd
+
+Third-party component:
+
+ODPAPI uses the standard upstream cJSON library by Dave Gamble, licensed under
+the MIT License. cJSON is an external dependency; its source and header are
+not vendored in this repository. When CMake downloads cJSON, its license is
+installed alongside the dependency. The Apache License 2.0 for ODPAPI does not
+replace cJSON's separate license terms.

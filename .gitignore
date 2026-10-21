@@ -1,0 +1,8 @@
+/build/
+/cmake-build-*/
+/docs/api/
+/documents/API/C/html/
+/test.zip
+/documents/specification/Open Data Protection API.docx
+/documents/license/Co-Development Agreement.txt
+CMakeUserPresets.json

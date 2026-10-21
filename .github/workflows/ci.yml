@@ -1,0 +1,22 @@
+name: CMake
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DODPAPI_USE_SYSTEM_CJSON=OFF -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Install
+        run: cmake --install build --prefix install --config Release

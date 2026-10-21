@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "created": "2026-01-01 00:00:00 GMT",
+    "creator": "Example ODPAPI implementation",
+    "version": "ODPAPI Version: 1.0"
+  },
+  "response": {
+    "result": 0,
+    "result_text": "OK",
+    "objects": [
+      {
+        "sequence": 0,
+        "scope": "EXAMPLE.LTO",
+        "guid": "00000000-0000-0000-0000-000000000001",
+        "description": "Example source library",
+        "targets": ["00000000-0000-0000-0000-000000000002"],
+        "capacity_total": 1000,
+        "capacity_used": 125,
+        "moving_in": 2,
+        "moving_out": 1,
+        "scratch_total": 50,
+        "scratch_minimum": 10
+      },
+      {
+        "sequence": 1,
+        "scope": "EXAMPLE.LTO",
+        "guid": "00000000-0000-0000-0000-000000000002",
+        "description": "Example target library",
+        "targets": ["00000000-0000-0000-0000-000000000001"],
+        "capacity_total": 1000,
+        "capacity_used": 200,
+        "moving_in": 1,
+        "moving_out": 0,
+        "scratch_total": 40,
+        "scratch_minimum": 10
+      }
+    ],
+    "transaction_seconds": "0"
+  }
+}

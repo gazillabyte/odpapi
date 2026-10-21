@@ -1,0 +1,56 @@
+name: Adapter project listing
+description: Ask GazillaByte to list your public ODPAPI adapter
+title: "Adapter listing: "
+labels: ["adapter-ecosystem"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Share only public information that you approve GazillaByte to republish.
+        A listing is informational and does not imply certification or endorsement.
+  - type: input
+    id: project
+    attributes:
+      label: Project and maintainer name
+      placeholder: Example Adapter by Example Maintainer
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Public project or product URL
+    validations:
+      required: true
+  - type: input
+    id: protocol
+    attributes:
+      label: ODPAPI version and implemented operations
+      placeholder: Version; inventory, scan, move, etc.
+    validations:
+      required: true
+  - type: input
+    id: platforms
+    attributes:
+      label: Supported platforms or integration targets
+    validations:
+      required: false
+  - type: input
+    id: license
+    attributes:
+      label: Adapter license
+      placeholder: SPDX identifier or proprietary
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: Optional public support/contact URL
+    validations:
+      required: false
+  - type: checkboxes
+    id: permission
+    attributes:
+      label: Publication permission
+      options:
+        - label: I maintain or represent this adapter and approve the submitted public details being republished in the ODPAPI ecosystem list.
+          required: true

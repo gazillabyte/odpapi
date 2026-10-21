@@ -1,0 +1,42 @@
+digraph ODPAPIArchitecture {
+    graph [
+        rankdir=LR,
+        bgcolor="transparent",
+        pad="0.25",
+        nodesep="0.45",
+        ranksep="0.7",
+        fontname="Arial",
+        label="ODPAPI integration path",
+        labelloc="t",
+        fontsize=18
+    ];
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11,
+          color="#315b7d", fillcolor="#f2f7fb", fontcolor="#17324d", margin="0.18,0.12"];
+    edge [dir=both, color="#487da3", penwidth=1.6, arrowsize=0.8, fontname="Arial", fontsize=9];
+
+    backend [label="Backend systems\nTapeTrack · ATL management\nBackup and vault platforms"];
+    api [label="ODPAPI\nHTTP(S) + JSON\nAuthentication per request"];
+
+    subgraph cluster_apache {
+        label="Apache HTTP Server";
+        labelloc="t";
+        fontname="Arial";
+        fontsize=12;
+        color="#7897ad";
+        style="rounded";
+        bgcolor="#fbfdff";
+
+        mod [label="ODPAPI Apache module\nAdapter implementation", fillcolor="#e8f2f8"];
+        endpoint [label="ODPAPI endpoint\n/dpapi-v1/...", shape=component, fillcolor="#e7f4ec", color="#4e8061"];
+        mod -> endpoint [dir=forward, label="serves"];
+    }
+
+    backend -> api [label="exchanges object and library data"];
+    api -> mod [label="request / response"];
+
+    helpers [label="ODPAPI C helper library\nJSON requests and responses"];
+    cjson [label="Standard cJSON library\nExternal dependency · MIT license\nSystem package or CMake download",
+           fillcolor="#fff5e5", color="#a57c38"];
+    mod -> helpers [dir=forward, label="may use", style=dashed];
+    helpers -> cjson [dir=forward, label="uses for JSON handling"];
+}

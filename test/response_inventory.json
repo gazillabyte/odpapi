@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "created": "2026-01-01 00:00:00 GMT",
+    "creator": "Example ODPAPI implementation",
+    "version": "ODPAPI Version: 1.0"
+  },
+  "response": {
+    "result": 0,
+    "result_text": "OK",
+    "objects": [
+      {
+        "sequence": 0,
+        "status": 0,
+        "id": "EXAMPLE0001",
+        "type": "LTO",
+        "encrypted": false,
+        "scratch": false
+      }
+    ],
+    "transaction_seconds": "0"
+  }
+}
