@@ -5,11 +5,10 @@ ODPAPI adapters. It is not a legal agreement, certification, or guarantee of
 compatibility. The Apache-2.0 license applies to the ODPAPI project materials;
 it does not require an independently written adapter to be open source.
 
-The historical protocol document is incomplete and contains conflicting
-examples. Until a current, versioned normative specification resolves those
-conflicts, adapter authors and providers should agree on the exact protocol
-version, routes, fields, status values, authentication method, and error
-handling used by their integration.
+Adapter authors and providers should agree on the exact protocol version,
+routes, fields, status values, authentication method, and error handling used
+by their integration. These project materials do not define every provider's
+deployment details.
 
 ## Compatibility expectations
 
@@ -30,9 +29,9 @@ An adapter should:
 8. Test against synthetic fixtures or a provider-authorized test endpoint, not
    production data.
 
-Do not infer status-code meanings from old prose where it conflicts with the
-current helper enums. Record the evidence and resolve the version-specific
-behavior with the integration partner before claiming interoperability.
+Check status-code meanings against the current helper enums and the provider's
+versioned contract. Record discrepancies and resolve version-specific behavior
+with the integration partner before claiming interoperability.
 
 ## Independence and project listing
 

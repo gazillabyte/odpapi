@@ -7,11 +7,12 @@ guide work there. It is project guidance, not a license or legal agreement.
 
 ## Establish the protocol contract first
 
-- Read `README.md`, `ADAPTER-CONTRACT.md`, and the relevant `wiki/` pages.
-- The DOCX specification is historical (2013–2014), incomplete, and sometimes
-  inconsistent with itself and with `include/odpapi.h`. Do not silently invent
-  routes, required fields, or status-code meanings. Record discrepancies and
-  request a provider/version decision before encoding ambiguous behavior.
+- Read `README.md`, `ADAPTER-CONTRACT.md`, and the relevant
+  [project Wiki](https://github.com/gazillabyte/odpapi/wiki) pages.
+- Check protocol behavior against `include/odpapi.h` and the provider's
+  versioned contract. Do not silently invent routes, required fields, or
+  status-code meanings. Record discrepancies and request a provider/version
+  decision before encoding ambiguous behavior.
 - Keep an adapter in its own repository and architecture. The TapeTrack
   adapter is closed source and is not included here; do not seek, recreate, or
   copy its implementation or customer-specific configuration.

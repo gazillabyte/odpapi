@@ -30,6 +30,13 @@ if(NOT TARGET cJSON::cJSON)
     set(ENABLE_CUSTOM_COMPILER_FLAGS OFF CACHE BOOL "Use cJSON compiler flags" FORCE)
     set(CJSON_OVERRIDE_BUILD_SHARED_LIBS ON CACHE BOOL "Select cJSON library type" FORCE)
     set(CJSON_BUILD_SHARED_LIBS ON CACHE BOOL "Build shared cJSON" FORCE)
+    # cJSON 1.7.19 declares an older policy version. Use a supported policy
+    # floor on CMake 4 without modifying the upstream source.
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.0 AND
+       (NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM OR
+        CMAKE_POLICY_VERSION_MINIMUM VERSION_LESS 3.10))
+        set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
+    endif()
     FetchContent_Declare(cjson
         URL https://codeload.github.com/DaveGamble/cJSON/tar.gz/refs/tags/v1.7.19
         URL_HASH SHA256=7fa616e3046edfa7a28a32d5f9eacfd23f92900fe1f8ccd988c1662f30454562

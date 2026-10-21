@@ -1,7 +1,7 @@
 digraph ODPAPIArchitecture {
     graph [
-        rankdir=LR,
-        bgcolor="transparent",
+        rankdir=TB,
+        bgcolor="white",
         pad="0.25",
         nodesep="0.45",
         ranksep="0.7",

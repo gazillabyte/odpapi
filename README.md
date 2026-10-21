@@ -17,7 +17,7 @@ The editable Graphviz source is `graphics/odpapi-architecture.dot`.
 
 ## Design goals
 
-The original ODPAPI specification describes these goals:
+ODPAPI has these goals:
 
 - Share object and media information between libraries.
 - Support movement of objects between libraries and allow libraries to be
@@ -33,7 +33,7 @@ code and example files.
 
 ## Protocol operations
 
-The historical specification describes operations for:
+ODPAPI operations include:
 
 - **Inventory** — report objects held by a library and their status.
 - **Move** — request movement of objects from a source library to a target.
@@ -48,7 +48,7 @@ request outcome; per-object statuses report results for individual objects.
 Implementations should preserve request sequence numbers so clients can match
 each result with its input item.
 
-Library identifiers are 128-bit GUIDs. The original design allows an
+Library identifiers are 128-bit GUIDs. The protocol allows an
 implementation to encode provider-specific identifiers in the GUID, and only
 requires uniqueness within a server scope. Integrators should agree on a stable
 GUID mapping and scope with each provider; an encoded GUID is not automatically
@@ -60,8 +60,8 @@ globally meaningful.
 - `src/odpapi.c` — JSON request lookup and response construction helpers.
 - `test/` — sample JSON request and response documents. They are not a live
   integration test suite.
-- `wiki/` — draft pages for the GitHub project wiki, based on the historical
-  protocol document.
+- [Project Wiki](https://github.com/gazillabyte/odpapi/wiki) — protocol overview,
+  operations, and integration guidance.
 - `ADAPTER-CONTRACT.md` — technical interoperability expectations for
   independent implementations (not a legal agreement).
 - `AGENTS.md` — guidance for AI coding agents working with ODPAPI or using it
@@ -69,12 +69,9 @@ globally meaningful.
 - `CONTRIBUTING.md` — project contribution terms and review expectations.
 - `ECOSYSTEM.md` — how adapter maintainers can request a public listing.
 
-The source tree also contains the original 2013–2014 specification and a
-historical co-development agreement. Those source documents are excluded from
-the GitHub repository pending rights and attribution review. The specification
-is useful background, but contains incomplete sections and examples that
-conflict with one another or with the C helper enums. The wiki drafts summarize
-its purpose and use without treating it as a current normative specification.
+Adapter authors and providers should agree on version-specific routes,
+payloads, and status semantics before implementing an integration. The wiki
+provides orientation; it does not define every provider's behavior.
 
 ## Build the C helper library
 
