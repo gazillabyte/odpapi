@@ -64,6 +64,8 @@ globally meaningful.
   operations, and integration guidance.
 - `ADAPTER-CONTRACT.md` — technical interoperability expectations for
   independent implementations (not a legal agreement).
+- `adapter-ironmountain/` — the open-source Iron Mountain SecureSync
+  SFTP/Berkeley DB/Apache adapter project.
 - `AGENTS.md` — guidance for AI coding agents working with ODPAPI or using it
   as a reference for a separate adapter.
 - `CONTRIBUTING.md` — project contribution terms and review expectations.

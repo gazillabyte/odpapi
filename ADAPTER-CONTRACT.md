@@ -29,9 +29,39 @@ An adapter should:
 8. Test against synthetic fixtures or a provider-authorized test endpoint, not
    production data.
 
+## Query capability behavior
+
+The Query operation is the capability-discovery entry point. A client must be
+able to call the adapter's query endpoint without query arguments or a request
+object. The successful response must identify the functions the adapter offers
+in `response.functions`, using the provider's established function names. An
+adapter may include additional disclosure or configuration information, but it
+must not require an object identifier, library identifier, or request body just
+to discover its capabilities. Authentication and authorization may still be
+required by the deployment.
+
 Check status-code meanings against the current helper enums and the provider's
 versioned contract. Record discrepancies and resolve version-specific behavior
 with the integration partner before claiming interoperability.
+
+## Inventory optional fields
+
+The standard inventory object may include the boolean fields `encrypted` and
+`scratch`. `enum ODPAPISTATUS` represents these values: `UNKNOWN` (`-1`) omits
+the field, `FALSE` (`0`) emits JSON `false`, and `TRUE` (`1`) emits JSON
+`true`. An adapter must not claim a value merely to populate an optional
+field. The Linux SCSI changer adapter therefore uses `UNKNOWN` for both fields
+because the media-changer inventory does not report encryption or scratch-media
+state.
+
+Inventory objects may also include the numeric `slot` field. It is a 1-based
+library element address. The helper omits it when the adapter passes `0`.
+
+The List fields `moving_in`, `moving_out`, `scratch_total`, and
+`scratch_minimum` are unsigned counts. Adapters that do not track those
+counts report zero. These fields do not use `ODPAPISTATUS`; that enum is
+reserved for tri-state boolean fields such as `encrypted` and `scratch` in
+inventory objects.
 
 ## Independence and project listing
 

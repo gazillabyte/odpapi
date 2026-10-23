@@ -37,6 +37,13 @@ enum ODPAPI_COMMONERROR {
 	ODPAPI_COMMONERROR_UNKNOWN = 1024          /**< Unclassified result. */
 };
 
+/** @brief Tri-state boolean used when a provider may not know a value. */
+enum ODPAPISTATUS {
+	ODPAPISTATUS_UNKNOWN = -1, /**< Value is unknown or unsupported. */
+	ODPAPISTATUS_FALSE = 0,    /**< Value is explicitly false. */
+	ODPAPISTATUS_TRUE = 1      /**< Value is explicitly true. */
+};
+
 /** @brief Status of an object reported by an inventory operation. */
 enum ODPAPI_INVENTORYSTATUS {
 	ODPAPI_INVENTORYSTATUS_OK = 0,        /**< Object is present and available. */
@@ -158,18 +165,20 @@ void odpapi_move_response_helper(cJSON *responsearray, enum ODPAPI_MOVESTATUS st
  * @param id Optional object identifier.
  * @param type Optional object type.
  * @param description Optional object description.
+	 * @param slot Optional 1-based library slot; zero omits the field.
  * @param movedate Optional move date.
  * @param target Optional target library identifier.
  * @param library Library identifier, used for EXTERNAL and MOVINGIN statuses.
  * @param lastmove Optional last-move timestamp.
- * @param encrypted Nonzero to report encrypted.
- * @param scratch Nonzero to report scratch status.
+	 * @param encrypted Tri-state encryption status; UNKNOWN omits the field.
+	 * @param scratch Tri-state scratch status; UNKNOWN omits the field.
  * @param automatemovedate Nonzero to report automatic move dates.
  */
 void odpapi_inventory_response_helper(cJSON *responsearray,
 	enum ODPAPI_INVENTORYSTATUS status, int sequence, char *id, char *type,
-	char *description, char *movedate, char *target, char *library,
-	char *lastmove, int encrypted, int scratch, int automatemovedate);
+	char *description, unsigned int slot, char *movedate, char *target, char *library,
+	char *lastmove, enum ODPAPISTATUS encrypted, enum ODPAPISTATUS scratch,
+	int automatemovedate);
 
 /** @brief Append one scan result object to a response array.
  * @param responsearray Destination cJSON array; takes ownership of the new item.
@@ -200,10 +209,10 @@ void odpapi_add_response_helper(cJSON *responsearray, enum ODPAPI_ADDSTATUS stat
  * @param scope Optional library scope.
  * @param capacity Total capacity.
  * @param capacityused Capacity currently used.
- * @param movingin Count of objects moving in.
- * @param movingout Count of objects moving out.
- * @param scratch Scratch object count.
- * @param minscratch Minimum scratch count.
+	 * @param movingin Count of objects moving in.
+	 * @param movingout Count of objects moving out.
+	 * @param scratch Scratch object count.
+	 * @param minscratch Minimum scratch count.
  * @param automatemovedate Nonzero to enable automatic move dates.
  * @param latitude Latitude; coordinates are emitted when either coordinate is nonzero.
  * @param longitude Longitude; coordinates are emitted when either coordinate is nonzero.

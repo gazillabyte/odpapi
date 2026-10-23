@@ -326,12 +326,13 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 								      char* id,
 								      char* type,
 									  char* description,
+									  unsigned int slot,
 									  char* movedate,
 									  char* target,
 									  char* library,
 									  char* lastmove,
-									  int encrypted,
-									  int scratch,
+									  enum ODPAPISTATUS encrypted,
+									  enum ODPAPISTATUS scratch,
 									  int automatemovedate)
 {
 	cJSON* response = cJSON_CreateObject();
@@ -355,13 +356,18 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 		cJSON_AddStringToObject(response, "description", description);
 	}
 
+	if (slot > 0)
+		cJSON_AddNumberToObject(response, "slot", slot);
+
 	if ( movedate && strlen(movedate) )
 	{
 		cJSON_AddStringToObject(response, "move_date", movedate);
 	}
 
-	cJSON_AddBoolToObject(response, "encrypted", encrypted);
-	cJSON_AddBoolToObject(response, "scratch", scratch);
+	if (encrypted >= 0)
+		cJSON_AddBoolToObject(response, "encrypted", encrypted != 0);
+	if (scratch >= 0)
+		cJSON_AddBoolToObject(response, "scratch", scratch != 0);
 
 	if ( automatemovedate )
 	{
