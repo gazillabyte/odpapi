@@ -1,0 +1,23 @@
+FROM registry.access.redhat.com/ubi9/ubi AS build
+
+RUN dnf install -y gcc make cmake httpd-devel apr-devel ca-certificates \
+    && dnf clean all
+
+COPY . /src/odpapi
+
+RUN cmake -S /src/odpapi/adapter-scsi -B /build \
+        -DODPAPI_SOURCE_DIR=/src/odpapi \
+        -DODPAPI_USE_SYSTEM_CJSON=OFF \
+        -DODPAPI_FETCH_CJSON=ON \
+        -DBUILD_TESTING=ON \
+    && cmake --build /build \
+    && ctest --test-dir /build --output-on-failure
+
+FROM registry.access.redhat.com/ubi9/httpd-24
+
+COPY --from=build /build/mod_odpapi_scsi.so /etc/httpd/modules/mod_odpapi_scsi.so
+COPY --from=build /build/_deps/cjson-build/libcjson.so* /usr/lib64/
+COPY adapter-scsi/podman/apache/odpapi-scsi.conf /etc/httpd/conf.d/odpapi-scsi.conf
+
+EXPOSE 8080
+
