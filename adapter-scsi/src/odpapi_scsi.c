@@ -63,7 +63,7 @@ static const char *set_changer(cmd_parms *cmd, void *unused, const char *path,
 	(void)unused;
 	if (!path || !*path) return "SCSIChangerDevice requires a device path";
 	if (!valid_guid(guid)) return "SCSIChangerDevice requires a valid UUID";
-	if (media_type && strlen(media_type) >= sizeof(entry->media_type))
+	if (media_type && strlen(media_type) >= SCSI_ADAPTER_MEDIA_TYPE_MAX)
 		return "SCSIChangerDevice media type is too long";
 	entry = (scsi_changer_config *)apr_array_push((apr_array_header_t *)config->changers);
 	entry->path = path;
@@ -77,6 +77,39 @@ static const command_rec commands[] = {
 		"Linux SCSI media changer device node, stable changer GUID, and optional media type"),
 	{ NULL }
 };
+
+static int read_body(request_rec *request, char **body, apr_size_t *length)
+{
+	const apr_size_t limit = 1024U * 1024U;
+	apr_size_t total = 0;
+	long read;
+	char *buffer;
+	int status = ap_setup_client_block(request, REQUEST_CHUNKED_DECHUNK);
+	if (status != OK) return status;
+	if (!ap_should_client_block(request)) {
+		*body = apr_pstrdup(request->pool, "");
+		*length = 0;
+		return OK;
+	}
+	if (request->remaining > (apr_off_t)limit)
+		return HTTP_REQUEST_ENTITY_TOO_LARGE;
+	buffer = apr_palloc(request->pool, limit + 1U);
+	while ((read = ap_get_client_block(request, buffer + total, limit - total)) > 0)
+		total += (apr_size_t)read;
+	if (read < 0) return HTTP_BAD_REQUEST;
+	buffer[total] = '\0';
+	*body = buffer;
+	*length = total;
+	return OK;
+}
+
+static const char *request_string(cJSON *request_object, const char *name)
+{
+	cJSON *value;
+	if (!request_object || !name) return NULL;
+	value = cJSON_GetObjectItemCaseSensitive(request_object, name);
+	return cJSON_IsString(value) ? value->valuestring : NULL;
+}
 
 static int handler(request_rec *request)
 {
@@ -98,6 +131,11 @@ static int handler(request_rec *request)
 	int base_request;
 	int query_request;
 	int inventory_request;
+	cJSON *input = NULL;
+	cJSON *request_object = NULL;
+	char *body = NULL;
+	apr_size_t body_length = 0;
+	int body_status;
 
 	if (!request->handler || strcmp(request->handler, "scsi-adapter") != 0)
 		return DECLINED;
@@ -165,6 +203,58 @@ static int handler(request_rec *request)
 		volume_id = args ? apr_table_get(args, "id") : NULL;
 		source_library = args ? apr_table_get(args, "source_library") : NULL;
 	}
+	body_status = read_body(request, &body, &body_length);
+	if (body_status != OK) return body_status;
+	if (body_length != 0) {
+		input = cJSON_ParseWithLength(body, body_length);
+		if (!input || !cJSON_IsObject(input)) {
+			serialized = scsi_error_json(ODPAPI_COMMONERROR_PARSEFAILED,
+				"Request body is not a JSON object");
+			if (!serialized) { cJSON_Delete(input); return HTTP_INTERNAL_SERVER_ERROR; }
+			ap_set_content_type(request, "application/json");
+			ap_rputs(serialized, request);
+			ap_rputc('\n', request);
+			cJSON_free(serialized);
+			cJSON_Delete(input);
+			return OK;
+		}
+		request_object = odpapi_request_get_request(input);
+		if (!request_object || !cJSON_IsObject(request_object)) {
+			serialized = scsi_error_json(ODPAPI_COMMONERROR_MISSINGDATA,
+				"ODPAPI request object is missing");
+			if (!serialized) { cJSON_Delete(input); return HTTP_INTERNAL_SERVER_ERROR; }
+			ap_set_content_type(request, "application/json");
+			ap_rputs(serialized, request);
+			ap_rputc('\n', request);
+			cJSON_free(serialized);
+			cJSON_Delete(input);
+			return OK;
+		}
+		if (!source_library)
+			source_library = request_string(request_object, "source_library");
+		if (!volume_id)
+			volume_id = request_string(request_object, "id");
+	}
+	/* Validate required arguments before opening or probing any changer. */
+	if (find_request && (!volume_id || !*volume_id)) {
+		serialized = scsi_find_json(NULL, 0, volume_id);
+		if (!serialized) return HTTP_INTERNAL_SERVER_ERROR;
+		ap_set_content_type(request, "application/json");
+		ap_rputs(serialized, request);
+		ap_rputc('\n', request);
+		cJSON_free(serialized);
+		return OK;
+	}
+	if (inventory_request && (!source_library || !*source_library ||
+		!valid_guid(source_library))) {
+		serialized = scsi_inventory_json(NULL, 0, source_library);
+		if (!serialized) return HTTP_INTERNAL_SERVER_ERROR;
+		ap_set_content_type(request, "application/json");
+		ap_rputs(serialized, request);
+		ap_rputc('\n', request);
+		cJSON_free(serialized);
+		return OK;
+	}
 	config = ap_get_module_config(request->server->module_config,
 		&odpapi_scsi_module);
 	if (!config->changers || config->changers->nelts == 0) {
@@ -206,7 +296,7 @@ static int handler(request_rec *request)
 			odpapi_response_epilog(partial, ODPAPI_COMMONERROR_ENDPOINTFAILED,
 				"One or more configured SCSI changers could not be probed", time(NULL));
 			cJSON_free(serialized);
-			serialized = cJSON_Print(partial);
+			serialized = odpapi_response_print(partial);
 			cJSON_Delete(partial);
 		}
 	}
@@ -216,6 +306,7 @@ static int handler(request_rec *request)
 	ap_rputs(serialized, request);
 	ap_rputc('\n', request);
 	cJSON_free(serialized);
+	cJSON_Delete(input);
 	return OK;
 }
 

@@ -5,6 +5,7 @@
 #include <odpapi.h>
 
 #define SCSI_ADAPTER_MAX_DRIVES 100
+#define SCSI_ADAPTER_MEDIA_TYPE_MAX 32
 
 struct scsi_volume {
 	char id[36];
@@ -18,7 +19,7 @@ struct scsi_library_inventory {
 	char device_path[256];
 	char changer_guid[37];
 	char description[128];
-	char media_type[32];
+	char media_type[SCSI_ADAPTER_MEDIA_TYPE_MAX];
 	char drive_descriptions[SCSI_ADAPTER_MAX_DRIVES][128];
 	int drive_device_numbers[SCSI_ADAPTER_MAX_DRIVES];
 	int slots;

@@ -13,6 +13,15 @@ guide work there. It is project guidance, not a license or legal agreement.
   versioned contract. Do not silently invent routes, required fields, or
   status-code meanings. Record discrepancies and request a provider/version
   decision before encoding ambiguous behavior.
+- Use the shared `libodpapi` public API for standard response envelopes,
+  result/status text, and response-object helpers. Do not write adapter-local
+  JSON code that emulates, duplicates, or subtly changes `libodpapi` behavior.
+- Do not add response fields, request fields, routes, status meanings, or other
+  protocol behavior without explicit agreement on the provider/version
+  contract. Approved changes must be made in the shared library and contract
+  before adapters consume them. If extra data fields are needed outside the
+  Query response, add them to `libodpapi` and document them in the contract;
+  never add them only in an adapter.
 - Keep an adapter in its own repository and architecture. The TapeTrack
   adapter is closed source and is not included here; do not seek, recreate, or
   copy its implementation or customer-specific configuration.

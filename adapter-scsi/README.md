@@ -25,9 +25,9 @@ with a hint directing the client to `/dpapi-v1/query.json`. The Query
 capability response is returned only by
 `query.json`.
 
-POST is also accepted for compatibility with earlier deployments. The
-canonical format is the GET-based `/dpapi-v1/*.json` format above.
-`source_library` is required. A missing value returns result `8`; an invalid
+POST is also accepted. Its JSON `request` object may provide `id` or
+`source_library`; URL arguments take precedence. The canonical format is the
+GET-based `/dpapi-v1/*.json` format above. `source_library` is required. A missing value returns result `8`; an invalid
 UUID returns result `7`; an unknown configured library returns result `100`.
 
 Responses use the ODPAPI helper library for the response envelope and List,
@@ -111,10 +111,15 @@ SCSIChangerDevice /dev/sch0 00000000-0000-5000-8000-000000000001 LTO
 </Location>
 ```
 
-The module does not implement authentication or read credentials. Apache may
-instead use LDAP, mTLS, or a trusted authenticated reverse proxy. The checked-
-in local-test config uses `Require all granted`; replace it with an explicit
-authorization policy before network exposure. Use HTTPS for real credentials.
+The module does not implement authentication or read credentials. Apache must
+use the configured Basic authentication file, or an approved LDAP, mTLS, or
+authenticated reverse proxy policy. Create `/etc/httpd/scsi.htpasswd` before
+starting Apache. Use HTTPS for real credentials.
+
+If more than one configured changer reports the same barcode, `find` returns
+all matching logical library GUIDs. A failed changer produces a request-wide
+endpoint failure; successfully read objects may remain as partial results and
+callers should retry after correcting the device.
 
 ## Build the Podman image
 

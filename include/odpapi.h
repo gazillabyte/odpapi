@@ -133,6 +133,38 @@ cJSON *odpapi_response_prolog(cJSON *root, const char *adaptername,
 void odpapi_response_epilog(cJSON *root, enum ODPAPI_COMMONERROR error,
 	char *hint, time_t start);
 
+/** @brief Validate Inventory arguments and populate a standard error response.
+ * @param root Response document to update when validation fails.
+ * @param start Start time from `time()` used to calculate elapsed seconds.
+ * @param source_library Required source-library UUID.
+ * @return Nonzero when all arguments are present; zero when the response was updated.
+ */
+int odpapi_inventory_validate_args(cJSON *root, time_t start,
+	const char *source_library);
+
+/** @brief Validate Find arguments and populate a standard error response.
+ * @param root Response document to update when validation fails.
+ * @param start Start time from `time()` used to calculate elapsed seconds.
+ * @param id Required object identifier. Find callers and adapters must treat
+ * this as an exact literal value, never as a regular expression or fnmatch
+ * pattern.
+ * @return Nonzero when the identifier is present; zero when the response was updated.
+ */
+int odpapi_find_validate_args(cJSON *root, time_t start, const char *id);
+
+/** @brief Append a library GUID to a standard Find response.
+ * @param responsearray Find response `objects` array.
+ * @param guid Library GUID to append as a string.
+ * @return Nonzero on success; zero when allocation or input validation fails.
+ */
+int odpapi_find_response_helper(cJSON *responsearray, const char *guid);
+
+/** @brief Serialize an ODPAPI response as formatted JSON.
+ * @param root Response document owned by the caller.
+ * @return A heap-allocated JSON string, released with cJSON_free(), or NULL.
+ */
+char *odpapi_response_print(cJSON *root);
+
 /** @brief Find a named child in a cJSON object (case-sensitive).
  * @param json Object or branch whose direct children are searched.
  * @param key NUL-terminated child name.
@@ -167,6 +199,7 @@ void odpapi_move_response_helper(cJSON *responsearray, enum ODPAPI_MOVESTATUS st
  * @param description Optional object description.
 	 * @param slot Optional 1-based library slot; zero omits the field.
  * @param movedate Optional move date.
+	 * @param nextmove Optional predicted next movement date.
  * @param target Optional target library identifier.
  * @param library Library identifier, used for EXTERNAL and MOVINGIN statuses.
  * @param lastmove Optional last-move timestamp.
@@ -175,9 +208,10 @@ void odpapi_move_response_helper(cJSON *responsearray, enum ODPAPI_MOVESTATUS st
  * @param automatemovedate Nonzero to report automatic move dates.
  */
 void odpapi_inventory_response_helper(cJSON *responsearray,
-	enum ODPAPI_INVENTORYSTATUS status, int sequence, char *id, char *type,
-	char *description, unsigned int slot, char *movedate, char *target, char *library,
-	char *lastmove, enum ODPAPISTATUS encrypted, enum ODPAPISTATUS scratch,
+	enum ODPAPI_INVENTORYSTATUS status, int sequence, const char *id, const char *type,
+	const char *description, unsigned int slot, const char *movedate, const char *target,
+	const char *nextmove, const char *library, const char *lastmove, enum ODPAPISTATUS encrypted,
+	enum ODPAPISTATUS scratch,
 	int automatemovedate);
 
 /** @brief Append one scan result object to a response array.
@@ -207,12 +241,12 @@ void odpapi_add_response_helper(cJSON *responsearray, enum ODPAPI_ADDSTATUS stat
  * @param description Library description.
  * @param guid Library GUID.
  * @param scope Optional library scope.
- * @param capacity Total capacity.
+	 * @param capacity Total capacity; UINT_MAX omits the field.
  * @param capacityused Capacity currently used.
-	 * @param movingin Count of objects moving in.
-	 * @param movingout Count of objects moving out.
-	 * @param scratch Scratch object count.
-	 * @param minscratch Minimum scratch count.
+	 * @param movingin Count of objects moving in; UINT_MAX omits the field.
+	 * @param movingout Count of objects moving out; UINT_MAX omits the field.
+	 * @param scratch Scratch object count; UINT_MAX omits the field.
+	 * @param minscratch Minimum scratch count; UINT_MAX omits the field.
  * @param automatemovedate Nonzero to enable automatic move dates.
  * @param latitude Latitude; coordinates are emitted when either coordinate is nonzero.
  * @param longitude Longitude; coordinates are emitted when either coordinate is nonzero.

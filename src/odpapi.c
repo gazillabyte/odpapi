@@ -9,6 +9,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <limits.h>
+#include <ctype.h>
 
 #define ODPAPI_VERSION "1.0"
 
@@ -17,10 +19,11 @@
 #define strdup _strdup
 #endif
 
-char* odpapi_format_common_result_text(char* buffer,                  
-	                                   size_t length,                    
-									   enum ODPAPI_COMMONERROR error)    
+char* odpapi_format_common_result_text(char* buffer,
+	                                   size_t length,
+									   enum ODPAPI_COMMONERROR error)
 {
+	if (!buffer || length == 0) return buffer;
 	memset(buffer, 0, length);
 
 	switch(error)
@@ -28,7 +31,7 @@ char* odpapi_format_common_result_text(char* buffer,
 	default:
 		snprintf(buffer, length, "Unknown error");
 		break;
-	case ODPAPI_COMMONERROR_OK:  
+	case ODPAPI_COMMONERROR_OK:
 		snprintf(buffer, length, "OK");
 		break;
 	case ODPAPI_COMMONERROR_PARSEFAILED:
@@ -37,19 +40,19 @@ char* odpapi_format_common_result_text(char* buffer,
 	case ODPAPI_COMMONERROR_NOTOFFERED:
 		snprintf(buffer, length, "API option not offered");
 		break;
-	case ODPAPI_COMMONERROR_NOTPERMITTED:     
+	case ODPAPI_COMMONERROR_NOTPERMITTED:
 		snprintf(buffer, length, "API option not permitted");
 		break;
 	case ODPAPI_COMMONERROR_FAILEDAUTH:
 		snprintf(buffer, length, "Failed authorization");
 		break;
-	case ODPAPI_COMMONERROR_ERRORCOMEBACK:    
+	case ODPAPI_COMMONERROR_ERRORCOMEBACK:
 		snprintf(buffer, length, "Service temporarily unavailable. Come back later");
 		break;
 	case ODPAPI_COMMONERROR_EXCEEDEDALLOWANCE:
 		snprintf(buffer, length, "Exceeded API allowance");
 		break;
-	case ODPAPI_COMMONERROR_INVALIDUUID:      
+	case ODPAPI_COMMONERROR_INVALIDUUID:
 		snprintf(buffer, length, "Unable to interpret UUID");
 		break;
 	case ODPAPI_COMMONERROR_MISSINGARGUMENT:
@@ -82,13 +85,15 @@ void odpapi_response_epilog(cJSON *root,
 {
 	char	work[256];
 	cJSON	*response = NULL;
-	cJSON	*tmp;
 	time_t	end = time(NULL);
 	int     totaltime = (int)difftime(end, start);
 	char    timework[32];
+	cJSON *item;
+
+	if (!root) return;
 
 	sprintf(timework, "%d", totaltime);
-	
+
 	odpapi_format_common_result_text(work, sizeof(work), error);
 
 	//*
@@ -102,50 +107,82 @@ void odpapi_response_epilog(cJSON *root,
 	if ( response == NULL )
 	{
 		response = cJSON_CreateObject();
+		if (!response) return;
 		cJSON_AddItemToObject(root, "response", response);
-		cJSON_AddNumberToObject(response, "result", error);
-		cJSON_AddStringToObject(response, "result_text", work);
-		cJSON_AddStringToObject(response, "transaction_seconds", timework);
-
-		if ( hint )
-		{
-			cJSON_AddStringToObject(response, "result_hint", hint);
-		}
 	}
-	else
+
+	item = cJSON_GetObjectItemCaseSensitive(response, "result");
+	if (item && cJSON_IsNumber(item)) item->valuedouble = item->valueint = error;
+	else cJSON_AddNumberToObject(response, "result", error);
+	item = cJSON_GetObjectItemCaseSensitive(response, "result_text");
+	if (item && cJSON_IsString(item)) cJSON_SetValuestring(item, work);
+	else cJSON_AddStringToObject(response, "result_text", work);
+	item = cJSON_GetObjectItemCaseSensitive(response, "transaction_seconds");
+	if (item && cJSON_IsString(item)) cJSON_SetValuestring(item, timework);
+	else cJSON_AddStringToObject(response, "transaction_seconds", timework);
+	if (hint && *hint)
 	{
-		if ( hint && strlen(hint) )
-		{
-			cJSON_AddStringToObject(response, "result_hint", hint);
-		}
+		item = cJSON_GetObjectItemCaseSensitive(response, "result_hint");
+		if (item && cJSON_IsString(item)) cJSON_SetValuestring(item, hint);
+		else cJSON_AddStringToObject(response, "result_hint", hint);
+	}
+}
 
-		cJSON_AddStringToObject(response, "transaction_seconds", timework);
-
-		//*
-		//* If we do have a response section then reset the result and result_text
-		//*
-		tmp = response->child;
-
-		while ( tmp )
-		{
-			if ( tmp->string && (strcmp(tmp->string, "result")==0) )
-			{
-				tmp->valuedouble = tmp->valueint = error;
+int odpapi_inventory_validate_args(cJSON *root, time_t start,
+	const char *source_library)
+{
+	size_t i;
+	if (!source_library || !*source_library) {
+		odpapi_response_epilog(root, ODPAPI_COMMONERROR_MISSINGARGUMENT,
+			"source_library is required", start);
+		return 0;
+	}
+	if (strlen(source_library) != 36) {
+		odpapi_response_epilog(root, ODPAPI_COMMONERROR_INVALIDUUID,
+			"source_library is not a valid UUID", start);
+		return 0;
+	}
+	for (i = 0; i < 36; ++i) {
+		if (i == 8 || i == 13 || i == 18 || i == 23) {
+			if (source_library[i] != '-') {
+				odpapi_response_epilog(root, ODPAPI_COMMONERROR_INVALIDUUID,
+					"source_library is not a valid UUID", start);
+				return 0;
 			}
-			else
-			{
-				if ( tmp->string && (strcmp(tmp->string, "result_text")==0) )
-				{
-					if ( tmp->valuestring )
-						free(tmp->valuestring);
-
-					tmp->valuestring = strdup(work);
-				}
-			}
-
-			tmp = tmp->next;
+		} else if (!isxdigit((unsigned char)source_library[i])) {
+			odpapi_response_epilog(root, ODPAPI_COMMONERROR_INVALIDUUID,
+				"source_library is not a valid UUID", start);
+			return 0;
 		}
 	}
+	return 1;
+}
+
+int odpapi_find_validate_args(cJSON *root, time_t start, const char *id)
+{
+	if (!id || !*id) {
+		odpapi_response_epilog(root, ODPAPI_COMMONERROR_MISSINGARGUMENT,
+			"id is required", start);
+		return 0;
+	}
+	return 1;
+}
+
+int odpapi_find_response_helper(cJSON *responsearray, const char *guid)
+{
+	cJSON *item;
+	if (!responsearray || !cJSON_IsArray(responsearray) || !guid || !*guid)
+		return 0;
+	item = cJSON_CreateString(guid);
+	if (!item) return 0;
+	cJSON_AddItemToArray(responsearray, item);
+	return 1;
+}
+
+char *odpapi_response_print(cJSON *root)
+{
+	if (!root) return NULL;
+	return cJSON_Print(root);
 }
 
 cJSON* odpapi_response_prolog(cJSON *root,
@@ -155,11 +192,20 @@ cJSON* odpapi_response_prolog(cJSON *root,
 							  const char* buildtime,
 							  const char* token)
 {
-	cJSON		*meta = cJSON_CreateObject();
-	cJSON		*response = cJSON_CreateObject();
+	cJSON		*meta;
+	cJSON		*response;
 	time_t		tNow;
 	struct tm*	pTM;
 	char		buffer[256];
+
+	if (!root) return NULL;
+	meta = cJSON_CreateObject();
+	response = cJSON_CreateObject();
+	if (!meta || !response) {
+		cJSON_Delete(meta);
+		cJSON_Delete(response);
+		return NULL;
+	}
 
 	//*
 	//* Set the time
@@ -173,30 +219,30 @@ cJSON* odpapi_response_prolog(cJSON *root,
 	{
 		strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", pTM);
 	}
-	
+
 	//*
 	//* Add the Meta section
 	//*
 	cJSON_AddItemToObject(root, "meta", meta);
-	cJSON_AddStringToObject(meta, "created", buffer); 
-	cJSON_AddStringToObject(meta, "creator", adaptername); 
+	cJSON_AddStringToObject(meta, "created", buffer);
+	cJSON_AddStringToObject(meta, "creator", adaptername ? adaptername : "");
 
-	snprintf(buffer, 
-		sizeof(buffer), 
-		"ODPAPI Version: %s", 
+	snprintf(buffer,
+		sizeof(buffer),
+		"ODPAPI Version: %s",
 		ODPAPI_VERSION);
-	
-	cJSON_AddStringToObject(meta, "version", buffer); 
-	
+
+	cJSON_AddStringToObject(meta, "version", buffer);
+
 	snprintf(buffer,
 		sizeof(buffer),
 		"%s at %s",
-		builddate,
-		buildtime);
+		builddate ? builddate : "unknown-date",
+		buildtime ? buildtime : "unknown-time");
 
 	cJSON_AddStringToObject(meta, "built", buffer);
 
-	cJSON_AddStringToObject(meta, "author", copyright);
+	cJSON_AddStringToObject(meta, "author", copyright ? copyright : "");
 
 
 	//*
@@ -220,7 +266,7 @@ cJSON* odpapi_request_get_request(cJSON *root)
 
 	if ( root && root->child )
 	{
-		request = root->child->next;
+		request = root->child;
 
 		while ( request )
 		{
@@ -229,7 +275,7 @@ cJSON* odpapi_request_get_request(cJSON *root)
 				break;
 			}
 
-			request = request->next;	
+			request = request->next;
 		}
 	}
 
@@ -240,7 +286,7 @@ cJSON* odpapi_request_get_value(cJSON *json, char* key)
 {
 	cJSON* result = NULL;
 
-	if ( json && json->child )
+	if ( json && json->child && key )
 	{
 		result = json->child;
 
@@ -251,7 +297,7 @@ cJSON* odpapi_request_get_value(cJSON *json, char* key)
 				break;
 			}
 
-			result = result->next;	
+			result = result->next;
 		}
 	}
 
@@ -266,12 +312,15 @@ void odpapi_move_response_helper(cJSON *responsearray,
 								 char* movedate,
 								 char* hint)
 {
-	cJSON* response = cJSON_CreateObject();
+	cJSON* response;
+	if (!responsearray || !cJSON_IsArray(responsearray)) return;
+	response = cJSON_CreateObject();
+	if (!response) return;
 	cJSON_AddItemToArray(responsearray, response);
 
 	cJSON_AddNumberToObject(response, "sequence", sequence);
 	cJSON_AddNumberToObject(response, "status", status);
-	
+
 	if ( hint && strlen(hint) )
 	{
 		cJSON_AddStringToObject(response, "status_hint", hint);
@@ -303,7 +352,7 @@ void odpapi_move_response_helper(cJSON *responsearray,
 			break;
 		}
 	}
-	
+
 	if ( id && strlen(id) )
 	{
 		cJSON_AddStringToObject(response, "id", id);
@@ -323,19 +372,23 @@ void odpapi_move_response_helper(cJSON *responsearray,
 void odpapi_inventory_response_helper(cJSON *responsearray,
 							          enum ODPAPI_INVENTORYSTATUS status,
 								      int sequence,
-								      char* id,
-								      char* type,
-									  char* description,
+					      const char* id,
+					      const char* type,
+						  const char* description,
 									  unsigned int slot,
-									  char* movedate,
-									  char* target,
-									  char* library,
-									  char* lastmove,
+						  const char* movedate,
+						  const char* target,
+							  const char* nextmove,
+						  const char* library,
+						  const char* lastmove,
 									  enum ODPAPISTATUS encrypted,
 									  enum ODPAPISTATUS scratch,
 									  int automatemovedate)
 {
-	cJSON* response = cJSON_CreateObject();
+	cJSON* response;
+	if (!responsearray || !cJSON_IsArray(responsearray)) return;
+	response = cJSON_CreateObject();
+	if (!response) return;
 	cJSON_AddItemToArray(responsearray, response);
 
 	cJSON_AddNumberToObject(response, "sequence", sequence);
@@ -364,6 +417,11 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 		cJSON_AddStringToObject(response, "move_date", movedate);
 	}
 
+	if ( nextmove && strlen(nextmove) )
+	{
+		cJSON_AddStringToObject(response, "next_move", nextmove);
+	}
+
 	if (encrypted >= 0)
 		cJSON_AddBoolToObject(response, "encrypted", encrypted != 0);
 	if (scratch >= 0)
@@ -374,12 +432,12 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 		cJSON_AddBoolToObject(response, "automate_move_date", 1);
 	}
 
-	if (strlen(target))
+	if (target && strlen(target))
 	{
 		cJSON_AddStringToObject(response, "target", target);
 	}
-	
-	if (strlen(lastmove))
+
+	if (lastmove && strlen(lastmove))
 	{
 		cJSON_AddStringToObject(response, "last_move_time", lastmove);
 	}
@@ -388,7 +446,8 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 	{
 	case ODPAPI_INVENTORYSTATUS_EXTERNAL:
 	case ODPAPI_INVENTORYSTATUS_MOVINGIN:
-		cJSON_AddStringToObject(response, "library", library);
+		if (library && *library)
+			cJSON_AddStringToObject(response, "library", library);
 		break;
 	default:
 		break;
@@ -396,7 +455,7 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 }
 
 cJSON* odpapi_list_response_helper(cJSON *responsearray,
-				 			       int sequence,
+							       int sequence,
 								   char* description,
 								   char* guid,
 								   char* scope,
@@ -411,12 +470,14 @@ cJSON* odpapi_list_response_helper(cJSON *responsearray,
 								   double longitude,
 								   char **targetguids)
 {
-	unsigned int	    i;
-	cJSON*				response = cJSON_CreateObject();
+	cJSON*				response;
 	cJSON*				coords;
 	cJSON*				targets;
 	cJSON*				target;
-	
+	if (!responsearray || !cJSON_IsArray(responsearray)) return NULL;
+	response = cJSON_CreateObject();
+	if (!response) return NULL;
+
 	cJSON_AddItemToArray(responsearray, response);
 	cJSON_AddNumberToObject(response, "sequence", sequence);
 
@@ -444,24 +505,35 @@ cJSON* odpapi_list_response_helper(cJSON *responsearray,
 	//* Now add each of the target GUIDs
 	//*
 	targets = cJSON_CreateArray();
+	if (!targets) {
+		cJSON_DeleteItemFromArray(responsearray,
+			cJSON_GetArraySize(responsearray) - 1);
+		return NULL;
+	}
 	cJSON_AddItemToObject(response, "targets", targets);
 
-	for(i=0; *targetguids; targetguids++, i++)
+	for(; targetguids && *targetguids; targetguids++)
 	{
 		target = cJSON_CreateString(*targetguids);
-		cJSON_AddItemToArray(targets, target);
+		if (target) cJSON_AddItemToArray(targets, target);
 	}
 
-	cJSON_AddNumberToObject(response, "capacity_total", capacity);
+	if (capacity != UINT_MAX)
+		cJSON_AddNumberToObject(response, "capacity_total", capacity);
 	cJSON_AddNumberToObject(response, "capacity_used", capacityused);
-	cJSON_AddNumberToObject(response, "moving_in", movingin);
-	cJSON_AddNumberToObject(response, "moving_out", movingout);
-	cJSON_AddNumberToObject(response, "scratch_total", scratch);
-	cJSON_AddNumberToObject(response, "scratch_minimum", minscratch);
+	if (movingin != UINT_MAX)
+		cJSON_AddNumberToObject(response, "moving_in", movingin);
+	if (movingout != UINT_MAX)
+		cJSON_AddNumberToObject(response, "moving_out", movingout);
+	if (scratch != UINT_MAX)
+		cJSON_AddNumberToObject(response, "scratch_total", scratch);
+	if (minscratch != UINT_MAX)
+		cJSON_AddNumberToObject(response, "scratch_minimum", minscratch);
 
 	if (latitude || longitude)
 	{
 		coords = cJSON_CreateObject();
+		if (!coords) return response;
 		cJSON_AddItemToObject(response, "coordinates", coords);
 		cJSON_AddNumberToObject(coords, "latitude", latitude);
 		cJSON_AddNumberToObject(coords, "longitude", longitude);
@@ -477,7 +549,10 @@ void odpapi_scan_response_helper(cJSON *responsearray,
 							    char* type,
 							    char* hint)
 {
-	cJSON* response = cJSON_CreateObject();
+	cJSON* response;
+	if (!responsearray || !cJSON_IsArray(responsearray)) return;
+	response = cJSON_CreateObject();
+	if (!response) return;
 	cJSON_AddItemToArray(responsearray, response);
 
 	cJSON_AddNumberToObject(response, "sequence", sequence);
@@ -505,7 +580,10 @@ void odpapi_add_response_helper(cJSON *responsearray,
 					            char* id,
 							    char* hint)
 {
-	cJSON* response = cJSON_CreateObject();
+	cJSON* response;
+	if (!responsearray || !cJSON_IsArray(responsearray)) return;
+	response = cJSON_CreateObject();
+	if (!response) return;
 	cJSON_AddItemToArray(responsearray, response);
 
 	cJSON_AddNumberToObject(response, "sequence", sequence);

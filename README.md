@@ -36,6 +36,11 @@ code and example files.
 ODPAPI operations include:
 
 - **Inventory** — report objects held by a library and their status.
+- **Find** — locate the libraries containing an object identifier. Find
+  requests require the `id` argument. A successful response returns library
+  GUID strings in `response.objects`; an unknown identifier returns result `0`
+  with an empty `response.objects` array. The identifier is matched literally,
+  not as a regular expression or `fnmatch` pattern.
 - **Move** — request movement of objects from a source library to a target.
 - **Scan** — report that objects were scanned at a library, with a scan reason.
 - **Add** — add object records to a library.
@@ -43,7 +48,9 @@ ODPAPI operations include:
 - **List** — enumerate accessible libraries and their properties.
 - **Query** — report available functions or service capabilities.
 
-Requests and responses carry JSON data. Common result codes report the overall
+Requests and responses carry JSON data. Operation-specific arguments may be
+provided in the URL query string or, where the adapter supports POST, in the
+JSON `request` object. Common result codes report the overall
 request outcome; per-object statuses report results for individual objects.
 Implementations should preserve request sequence numbers so clients can match
 each result with its input item.
@@ -66,6 +73,8 @@ globally meaningful.
   independent implementations (not a legal agreement).
 - `adapter-ironmountain/` — the open-source Iron Mountain SecureSync
   SFTP/Berkeley DB/Apache adapter project.
+- `adapter-scsi/` — the read-only Linux SCSI media-changer/Apache adapter
+  project.
 - `AGENTS.md` — guidance for AI coding agents working with ODPAPI or using it
   as a reference for a separate adapter.
 - `CONTRIBUTING.md` — project contribution terms and review expectations.

@@ -1,0 +1,11 @@
+.git
+.gitignore
+build
+adapter-ironmountain/build
+*.db
+*.db.new
+*.part
+*.download
+*.lock
+.aws
+.codex

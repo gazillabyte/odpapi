@@ -62,6 +62,8 @@ static void volume_guid(const struct scsi_library_inventory *library,
 		strcpy(element_class, "storage");
 	else if (volume->element_type == CHET_IE)
 		strcpy(element_class, "capio");
+	else if (volume->element_type == CHET_MT)
+		strcpy(element_class, "transport");
 	else {
 		snprintf(element_class, sizeof(element_class), "drive:%d", volume->element);
 	}
@@ -76,6 +78,7 @@ char *scsi_list_json(const struct scsi_library_inventory *libraries,
 	cJSON *objects;
 	char *serialized;
 	size_t i;
+	int sequence = 0;
 
 	if (!root || !odpapi_response_prolog(root, "SCSI Open Data Protection API Adapter",
 		"Copyright 2026 GazillaByte Pty Ltd", __DATE__, __TIME__, NULL)) {
@@ -95,7 +98,6 @@ char *scsi_list_json(const struct scsi_library_inventory *libraries,
 		char *scope = (char *)libraries[i].description;
 		int drive;
 		int target_count;
-		int sequence = 0;
 
 		library_guid(libraries[i].changer_guid, "storage", storage_guid,
 			sizeof(storage_guid));
@@ -173,7 +175,7 @@ char *scsi_list_json(const struct scsi_library_inventory *libraries,
 		}
 	}
 	odpapi_response_epilog(root, ODPAPI_COMMONERROR_OK, NULL, time(NULL));
-	serialized = cJSON_Print(root);
+	serialized = odpapi_response_print(root);
 	cJSON_Delete(root);
 	return serialized;
 }
@@ -199,7 +201,7 @@ char *scsi_capabilities_json(void)
 	cJSON_AddItemToArray(functions, cJSON_CreateString("inventory"));
 	cJSON_AddItemToObject(response, "functions", functions);
 	odpapi_response_epilog(root, ODPAPI_COMMONERROR_OK, NULL, time(NULL));
-	serialized = cJSON_Print(root);
+	serialized = odpapi_response_print(root);
 	cJSON_Delete(root);
 	return serialized;
 }
@@ -215,7 +217,7 @@ char *scsi_error_json(enum ODPAPI_COMMONERROR error, const char *hint)
 		return NULL;
 	}
 	odpapi_response_epilog(root, error, (char *)hint, time(NULL));
-	serialized = cJSON_Print(root);
+	serialized = odpapi_response_print(root);
 	cJSON_Delete(root);
 	return serialized;
 }
@@ -244,9 +246,10 @@ char *scsi_find_json(const struct scsi_library_inventory *libraries,
 	objects = cJSON_CreateArray();
 	if (!objects) { cJSON_Delete(root); return NULL; }
 	cJSON_AddItemToObject(response, "objects", objects);
-	if (!volume_id || !*volume_id) {
-		odpapi_response_epilog(root, ODPAPI_COMMONERROR_MISSINGARGUMENT,
-			"Requires an id in URL data", time(NULL));
+	if (!odpapi_find_validate_args(root, time(NULL), volume_id)) {
+		serialized = odpapi_response_print(root);
+		cJSON_Delete(root);
+		return serialized;
 	} else {
 		for (i = 0; i < library_count; ++i) {
 			size_t j;
@@ -254,31 +257,14 @@ char *scsi_find_json(const struct scsi_library_inventory *libraries,
 				char guid[37];
 				if (strcmp(libraries[i].volumes[j].id, volume_id) != 0) continue;
 				volume_guid(&libraries[i], &libraries[i].volumes[j], guid, sizeof(guid));
-				cJSON_AddItemToArray(objects, cJSON_CreateString(guid));
+				odpapi_find_response_helper(objects, guid);
 			}
 		}
 		odpapi_response_epilog(root, ODPAPI_COMMONERROR_OK, NULL, time(NULL));
 	}
-	serialized = cJSON_Print(root);
+	serialized = odpapi_response_print(root);
 	cJSON_Delete(root);
 	return serialized;
-}
-
-static int is_guid_text(const char *value)
-{
-	static const unsigned int dashes[] = { 8, 13, 18, 23 };
-	unsigned int i;
-	if (!value || strlen(value) != 36) return 0;
-	for (i = 0; i < 36; ++i) {
-		unsigned int j;
-		int dash = 0;
-		for (j = 0; j < 4; ++j) if (i == dashes[j]) dash = 1;
-		if (dash ? value[i] != '-' :
-			!((value[i] >= '0' && value[i] <= '9') ||
-			 (value[i] >= 'a' && value[i] <= 'f') ||
-			 (value[i] >= 'A' && value[i] <= 'F'))) return 0;
-	}
-	return 1;
 }
 
 static int volume_in_library(const struct scsi_library_inventory *library,
@@ -334,17 +320,8 @@ char *scsi_inventory_json(const struct scsi_library_inventory *libraries,
 	objects = cJSON_CreateArray();
 	if (!objects) { cJSON_Delete(root); return NULL; }
 	cJSON_AddItemToObject(response, "objects", objects);
-	if (!source_library || !*source_library) {
-		odpapi_response_epilog(root, ODPAPI_COMMONERROR_MISSINGARGUMENT,
-			"Requires source_library in URL data", time(NULL));
-		serialized = cJSON_Print(root);
-		cJSON_Delete(root);
-		return serialized;
-	}
-	if (!is_guid_text(source_library)) {
-		odpapi_response_epilog(root, ODPAPI_COMMONERROR_INVALIDUUID,
-			"source_library is not a valid UUID", time(NULL));
-		serialized = cJSON_Print(root);
+	if (!odpapi_inventory_validate_args(root, time(NULL), source_library)) {
+		serialized = odpapi_response_print(root);
 		cJSON_Delete(root);
 		return serialized;
 	}
@@ -374,14 +351,14 @@ char *scsi_inventory_json(const struct scsi_library_inventory *libraries,
 				(int)cJSON_GetArraySize(objects), (char *)volume->id,
 				(char *)(libraries[i].media_type[0] ? libraries[i].media_type : "tape"),
 				description_value,
-				volume->element + 1, "", "", "", "", ODPAPISTATUS_UNKNOWN,
+				volume->element + 1, "", "", "", "", "", ODPAPISTATUS_UNKNOWN,
 				ODPAPISTATUS_UNKNOWN, 0);
 		}
 	}
 	odpapi_response_epilog(root, matched ? ODPAPI_COMMONERROR_OK :
 		ODPAPI_COMMONERROR_SOURCELIBRARYNOTKNOWN, matched ? NULL :
 		"source_library is not configured", time(NULL));
-	serialized = cJSON_Print(root);
+	serialized = odpapi_response_print(root);
 	cJSON_Delete(root);
 	return serialized;
 }
