@@ -14,11 +14,13 @@ The checkout layout is:
 adapter-ironmountain/
   CMakeLists.txt
   include/
+    ironmountain_report.h
+    ironmountain_database.h
   src/
-    ironmountain-sync.c
-    mod_ironmountain.c
-    irm_report.c
-    irm_database.c
+    ironmountain_sync.c
+    mod_odpapi_ironmountain.c
+    ironmountain_report.c
+    ironmountain_database.c
   test/
   testdata/
   README.md

@@ -19,7 +19,7 @@ endif()
 add_subdirectory("${ODPAPI_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/odpapi")
 set_target_properties(odpapi PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_library(ironmountain_core STATIC src/irm_report.c src/irm_database.c)
+add_library(ironmountain_core STATIC src/ironmountain_report.c src/ironmountain_database.c)
 set_target_properties(ironmountain_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(ironmountain_core PUBLIC c_std_99)
 target_include_directories(ironmountain_core PUBLIC
@@ -27,7 +27,7 @@ target_include_directories(ironmountain_core PUBLIC
 target_link_libraries(ironmountain_core PUBLIC "${DB_LIBRARY}" "${LIBCSV_LIBRARY}")
 target_compile_options(ironmountain_core PRIVATE -Wall -Wextra -Wpedantic)
 
-add_executable(ironmountain-sync src/ironmountain-sync.c)
+add_executable(ironmountain-sync src/ironmountain_sync.c)
 target_compile_features(ironmountain-sync PRIVATE c_std_99)
 target_include_directories(ironmountain-sync PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/include" "${LIBSSH_INCLUDE_DIR}")
@@ -44,7 +44,7 @@ if(IRONMOUNTAIN_BUILD_APACHE)
 endif()
 
 if(IRONMOUNTAIN_BUILD_APACHE AND TARGET PkgConfig::APR AND APACHE_INCLUDE_DIR AND APACHE_MODULES_INCLUDE_DIR)
-add_library(mod_odpapi_ironmountain MODULE src/mod_ironmountain.c)
+add_library(mod_odpapi_ironmountain MODULE src/mod_odpapi_ironmountain.c)
 target_compile_features(mod_odpapi_ironmountain PRIVATE c_std_99)
 target_include_directories(mod_odpapi_ironmountain PRIVATE
     "${APACHE_INCLUDE_DIR}"

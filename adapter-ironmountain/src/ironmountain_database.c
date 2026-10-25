@@ -2,7 +2,7 @@
 #define _DEFAULT_SOURCE
 #endif
 
-#include "irm_database.h"
+#include "ironmountain_database.h"
 
 #include <db.h>
 #include <errno.h>

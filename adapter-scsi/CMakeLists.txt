@@ -24,7 +24,7 @@ find_path(APACHE_INCLUDE_DIR httpd.h PATH_SUFFIXES apache2 httpd)
 find_path(APACHE_MODULES_INCLUDE_DIR ap_config.h PATH_SUFFIXES apache2 httpd)
 
 if(TARGET PkgConfig::APR AND APACHE_INCLUDE_DIR AND APACHE_MODULES_INCLUDE_DIR)
-	add_library(mod_odpapi_scsi MODULE src/odpapi_scsi.c src/scsi_probe.c)
+	add_library(mod_odpapi_scsi MODULE src/mod_odpapi_scsi.c src/scsi_probe.c)
     target_compile_features(mod_odpapi_scsi PRIVATE c_std_99)
     target_include_directories(mod_odpapi_scsi PRIVATE
         "${APACHE_INCLUDE_DIR}"

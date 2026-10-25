@@ -1,7 +1,7 @@
-#ifndef IRM_DATABASE_H
-#define IRM_DATABASE_H
+#ifndef IRONMOUNTAIN_DATABASE_H
+#define IRONMOUNTAIN_DATABASE_H
 
-#include "irm_adapter.h"
+#include "ironmountain_report.h"
 
 /** Write a media database and its secondary indexes from parsed records. */
 int irm_database_load(const char *path, const struct irm_record *records,

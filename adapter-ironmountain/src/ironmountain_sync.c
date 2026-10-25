@@ -1,7 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include "irm_adapter.h"
-#include "irm_database.h"
+#include "ironmountain_report.h"
+#include "ironmountain_database.h"
 
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>

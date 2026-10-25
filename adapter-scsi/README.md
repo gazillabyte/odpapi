@@ -112,7 +112,7 @@ ctest --test-dir build/scsi --output-on-failure
 ```
 
 The built module is `build/scsi/mod_odpapi_scsi.so`; the Apache source is
-`src/odpapi_scsi.c`. Unit tests do not require SCSI hardware.
+`src/mod_odpapi_scsi.c`. Unit tests do not require SCSI hardware.
 
 ## Apache configuration
 

@@ -1,5 +1,5 @@
-#ifndef IRM_ADAPTER_H
-#define IRM_ADAPTER_H
+#ifndef IRONMOUNTAIN_REPORT_H
+#define IRONMOUNTAIN_REPORT_H
 
 #include <stddef.h>
 #include <stdint.h>

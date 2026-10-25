@@ -13,8 +13,8 @@
 
 #include <cJSON.h>
 #include <odpapi.h>
-#include "irm_adapter.h"
-#include "irm_database.h"
+#include "ironmountain_report.h"
+#include "ironmountain_database.h"
 
 #include <fcntl.h>
 #include <stdio.h>
