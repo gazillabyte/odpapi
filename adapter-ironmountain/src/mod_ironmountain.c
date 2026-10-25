@@ -27,7 +27,7 @@
 typedef struct {
 	const char *database_dir;
 } ironmountain_server_config;
-module AP_MODULE_DECLARE_DATA ironmountain_module;
+module AP_MODULE_DECLARE_DATA odpapi_ironmountain_module;
 
 static void *create_config(apr_pool_t *pool, server_rec *server)
 {
@@ -40,7 +40,7 @@ static void *create_config(apr_pool_t *pool, server_rec *server)
 static const char *set_database_dir(cmd_parms *cmd, void *unused, const char *value)
 {
 	ironmountain_server_config *config = ap_get_module_config(cmd->server->module_config,
-		&ironmountain_module);
+		&odpapi_ironmountain_module);
 	(void)unused;
 	config->database_dir = value;
 	return NULL;
@@ -399,7 +399,7 @@ static int handler(request_rec *request)
 		cJSON_free(serialized);
 		return OK;
 	}
-	config = ap_get_module_config(request->server->module_config, &ironmountain_module);
+	config = ap_get_module_config(request->server->module_config, &odpapi_ironmountain_module);
 	media_database = apr_pstrcat(request->pool, config->database_dir, "/IRMMEDIA.db", NULL);
 	library_database = apr_pstrcat(request->pool, config->database_dir, "/IRMLIBRARY.db", NULL);
 	media_index_database = apr_pstrcat(request->pool, config->database_dir, "/IRMMEDIAID.db", NULL);
@@ -561,6 +561,6 @@ static void register_hooks(apr_pool_t *pool)
 	ap_hook_handler(handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
-module AP_MODULE_DECLARE_DATA ironmountain_module = {
+module AP_MODULE_DECLARE_DATA odpapi_ironmountain_module = {
 	STANDARD20_MODULE_STUFF, NULL, NULL, create_config, NULL, commands, register_hooks
 };

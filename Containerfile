@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && mkdir -p /var/lib/ironmountain
 
 COPY --from=build /opt/ironmountain/bin/ironmountain-sync /usr/local/bin/ironmountain-sync
-COPY --from=build /opt/ironmountain/lib/mod_ironmountain.so /usr/lib/apache2/modules/mod_ironmountain.so
+COPY --from=build /opt/ironmountain/lib/mod_odpapi_ironmountain.so /usr/lib/apache2/modules/mod_odpapi_ironmountain.so
 COPY podman/apache/odpapi-ironmountain-adapter.conf /etc/apache2/conf-available/odpapi-ironmountain-adapter.conf
 COPY podman/entrypoint.sh /usr/local/bin/ironmountain-entrypoint
 

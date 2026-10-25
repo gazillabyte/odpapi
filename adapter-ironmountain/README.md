@@ -1,4 +1,4 @@
-# `mod_ironmountain.so`
+# `mod_odpapi_ironmountain.so`
 
 This directory is the self-contained open-source Iron Mountain SecureSync
 adapter project. It builds both the SFTP importer CLI and the Apache module,
@@ -149,7 +149,7 @@ cmake --build build
 ```
 
 The resulting artifacts will be `build/ironmountain-sync` and
-`build/mod_ironmountain.so` when Apache development files are installed.
+`build/mod_odpapi_ironmountain.so` when Apache development files are installed.
 From the ODPAPI project root, the same checkout provides a Podman build:
 
 ```sh
@@ -162,7 +162,7 @@ authentication, persistent storage, and the polling/cache lifecycle.
 Configure Apache with:
 
 ```apache
-LoadModule ironmountain_module /absolute/path/to/mod_ironmountain.so
+LoadModule odpapi_ironmountain_module /absolute/path/to/mod_odpapi_ironmountain.so
 IronMountainDatabaseDir /var/lib/ironmountain
 
 <LocationMatch "^/dpapi-v1(?:/.*)?$">

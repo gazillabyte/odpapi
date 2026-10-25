@@ -4,7 +4,7 @@ project(IronMountainSecureSyncAdapter VERSION 0.1.0 LANGUAGES C)
 
 set(ODPAPI_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." CACHE PATH
     "Path to the ODPAPI source tree")
-option(IRONMOUNTAIN_BUILD_APACHE "Build mod_ironmountain when Apache headers exist" ON)
+option(IRONMOUNTAIN_BUILD_APACHE "Build mod_odpapi_ironmountain when Apache headers exist" ON)
 find_path(DB_INCLUDE_DIR db.h)
 find_library(DB_LIBRARY NAMES db-5.3 db-5.2 db-5 db)
 find_path(LIBSSH_INCLUDE_DIR libssh/libssh.h)
@@ -44,22 +44,22 @@ if(IRONMOUNTAIN_BUILD_APACHE)
 endif()
 
 if(IRONMOUNTAIN_BUILD_APACHE AND TARGET PkgConfig::APR AND APACHE_INCLUDE_DIR AND APACHE_MODULES_INCLUDE_DIR)
-add_library(mod_ironmountain MODULE src/mod_ironmountain.c)
-target_compile_features(mod_ironmountain PRIVATE c_std_99)
-target_include_directories(mod_ironmountain PRIVATE
+add_library(mod_odpapi_ironmountain MODULE src/mod_ironmountain.c)
+target_compile_features(mod_odpapi_ironmountain PRIVATE c_std_99)
+target_include_directories(mod_odpapi_ironmountain PRIVATE
     "${APACHE_INCLUDE_DIR}"
     "${APACHE_MODULES_INCLUDE_DIR}"
     "${ODPAPI_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_LIST_DIR}/include"
     "${DB_INCLUDE_DIR}")
-target_link_libraries(mod_ironmountain PRIVATE ODPAPI::odpapi ironmountain_core PkgConfig::APR)
-set_target_properties(mod_ironmountain PROPERTIES
+target_link_libraries(mod_odpapi_ironmountain PRIVATE ODPAPI::odpapi ironmountain_core PkgConfig::APR)
+set_target_properties(mod_odpapi_ironmountain PROPERTIES
     PREFIX ""
-    OUTPUT_NAME "mod_ironmountain")
+    OUTPUT_NAME "mod_odpapi_ironmountain")
 
-install(TARGETS mod_ironmountain LIBRARY DESTINATION lib)
+install(TARGETS mod_odpapi_ironmountain LIBRARY DESTINATION lib)
 else()
-    message(WARNING "Apache development files not found; mod_ironmountain will not be built")
+    message(WARNING "Apache development files not found; mod_odpapi_ironmountain will not be built")
 endif()
 
 install(TARGETS ironmountain-sync RUNTIME DESTINATION bin)
