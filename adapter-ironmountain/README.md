@@ -26,7 +26,10 @@ adapter-ironmountain/
 ```
 
 The repository-root `Containerfile` and `podman/` directory build the image
-when this adapter is built as part of the ODPAPI checkout.
+when this adapter is built as part of the ODPAPI checkout. The Apache
+configuration is `podman/apache/odpapi-ironmountain-adapter.conf`, installed as
+`/etc/apache2/conf-available/odpapi-ironmountain-adapter.conf` and enabled with
+`a2enconf odpapi-ironmountain-adapter`.
 
 Users should be able to clone this directory, build the C targets, and build
 the container from the same checkout. The container build must use the locally
@@ -150,7 +153,7 @@ The resulting artifacts will be `build/ironmountain-sync` and
 From the ODPAPI project root, the same checkout provides a Podman build:
 
 ```sh
-podman build -f Containerfile -t mod-ironmountain .
+podman build -f Containerfile -t localhost/odpapi-ironmountain-adapter:latest .
 ```
 
 See [Run with Podman](#run-with-podman) below for startup arguments,
@@ -161,6 +164,15 @@ Configure Apache with:
 ```apache
 LoadModule ironmountain_module /absolute/path/to/mod_ironmountain.so
 IronMountainDatabaseDir /var/lib/ironmountain
+
+<LocationMatch "^/dpapi-v1(?:/.*)?$">
+    SetHandler odpapi-ironmountain-adapter
+    AuthType Basic
+    AuthName "ODPAPI Iron Mountain"
+    AuthBasicProvider file
+    AuthUserFile /etc/apache2/odpapi-users
+    Require valid-user
+</LocationMatch>
 ```
 
 The configured Apache handler is read-only and serves the standard `/dpapi-v1`
@@ -284,19 +296,19 @@ credentials serve separate purposes.
 ```sh
 podman volume create ironmountain-state
 podman run -d \
-  --name ironmountain \
+  --name odpapi-ironmountain-adapter \
   --restart=unless-stopped \
   --env-file "$HOME/.config/odpapi-irm/irm.env" \
   -p 127.0.0.1:8080:80 \
   -v ironmountain-state:/var/lib/ironmountain \
   -v "$HOME/.config/odpapi-irm/known_hosts:/run/irm/known_hosts:ro,Z" \
   -v "$HOME/.config/odpapi-irm/odpapi-users:/etc/apache2/odpapi-users:ro,Z" \
-  mod-ironmountain
+  localhost/odpapi-ironmountain-adapter:latest
 ```
 
 | Argument | Purpose |
 |---|---|
-| `--name ironmountain` | Names the container for logs, exec, stop, and start commands |
+| `--name odpapi-ironmountain-adapter` | Names the container for logs, exec, stop, and start commands |
 | `--restart=unless-stopped` | Restarts the container after it exits unless explicitly stopped |
 | `--env-file ...` | Supplies the importer settings and SFTP password at runtime |
 | `-p 127.0.0.1:8080:80` | Publishes container HTTP port 80 on host loopback port 8080 |
@@ -319,7 +331,7 @@ environment contains the SFTP password.
 Follow startup and import results, then query the authenticated endpoint:
 
 ```sh
-podman logs -f ironmountain
+podman logs -f odpapi-ironmountain-adapter
 curl --user example-api-user http://127.0.0.1:8080/dpapi-v1/query
 curl --user example-api-user http://127.0.0.1:8080/dpapi-v1/list
 ```
@@ -327,7 +339,8 @@ curl --user example-api-user http://127.0.0.1:8080/dpapi-v1/list
 Each `curl` command prompts for the API password. Query reports capabilities;
 List verifies access to the imported libraries after a successful import.
 Before the first successful import, database-backed requests cannot return
-inventory. Use `podman stop ironmountain` and `podman start ironmountain` for
+inventory. Use `podman stop odpapi-ironmountain-adapter` and
+`podman start odpapi-ironmountain-adapter` for
 routine shutdown and startup. Changes to the env file require recreating the
 container with the updated `podman run` command; reuse the named state volume.
 

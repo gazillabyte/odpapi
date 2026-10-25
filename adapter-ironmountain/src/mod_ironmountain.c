@@ -355,7 +355,7 @@ static int handler(request_rec *request)
 	int base_request;
 	int lock_fd = -1;
 	char lock_path[4096];
-	if (!request->handler || strcmp(request->handler, "ironmountain-securesync") != 0)
+	if (!request->handler || strcmp(request->handler, "odpapi-ironmountain-adapter") != 0)
 		return DECLINED;
 	query_request = request->uri &&
 		(strcmp(request->uri, "/dpapi-v1/query") == 0 ||

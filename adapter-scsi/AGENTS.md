@@ -49,7 +49,7 @@ cmake -S adapter-scsi -B build/scsi \
 cmake --build build/scsi --parallel
 ctest --test-dir build/scsi --output-on-failure
 podman build --file adapter-scsi/Containerfile \
-  --tag localhost/scsi-adapter:test .
+  --tag localhost/odpapi-scsi-adapter:test .
 ```
 
 Native tests must not require a live changer. Use synthetic fixtures for core

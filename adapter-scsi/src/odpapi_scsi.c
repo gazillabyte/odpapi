@@ -131,7 +131,7 @@ static int handler(request_rec *request)
 	apr_size_t body_length = 0;
 	int body_status;
 
-	if (!request->handler || strcmp(request->handler, "scsi-adapter") != 0)
+	if (!request->handler || strcmp(request->handler, "odpapi-scsi-adapter") != 0)
 		return DECLINED;
 	if (request->args && strlen(request->args) > 16384)
 		return HTTP_REQUEST_URI_TOO_LARGE;

@@ -22,10 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=build /opt/ironmountain/bin/ironmountain-sync /usr/local/bin/ironmountain-sync
 COPY --from=build /opt/ironmountain/lib/mod_ironmountain.so /usr/lib/apache2/modules/mod_ironmountain.so
-COPY podman/apache/ironmountain.conf /etc/apache2/conf-available/ironmountain.conf
+COPY podman/apache/odpapi-ironmountain-adapter.conf /etc/apache2/conf-available/odpapi-ironmountain-adapter.conf
 COPY podman/entrypoint.sh /usr/local/bin/ironmountain-entrypoint
 
-RUN a2enconf ironmountain && chmod 0755 /usr/local/bin/ironmountain-entrypoint
+RUN a2enconf odpapi-ironmountain-adapter && chmod 0755 /usr/local/bin/ironmountain-entrypoint
 
 VOLUME ["/var/lib/ironmountain"]
 EXPOSE 80

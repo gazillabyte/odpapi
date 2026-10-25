@@ -116,6 +116,9 @@ The built module is `build/scsi/mod_odpapi_scsi.so`; the Apache source is
 
 ## Apache configuration
 
+The image installs `podman/apache/odpapi-scsi-adapter.conf` from this adapter
+directory as `/etc/httpd/conf.d/odpapi-scsi-adapter.conf`.
+
 `SCSIChangerDevice` takes a device path and an optional media type. If the
 media type is omitted, inventory uses `"tape"`. Add one line per changer:
 
@@ -124,7 +127,7 @@ LoadModule odpapi_scsi_module /etc/httpd/modules/mod_odpapi_scsi.so
 SCSIChangerDevice /dev/sch0 LTO
 
 <Location /dpapi-v1>
-    SetHandler scsi-adapter
+    SetHandler odpapi-scsi-adapter
     AuthType Basic
     AuthName "SCSI inventory"
     AuthBasicProvider file
@@ -151,7 +154,7 @@ source tree as its context:
 ```sh
 podman build \
   --file adapter-scsi/Containerfile \
-  --tag localhost/scsi-adapter:latest \
+  --tag localhost/odpapi-scsi-adapter:latest \
   .
 ```
 
@@ -164,21 +167,22 @@ The image listens on container port `8080`. Host port `8080` may already be in
 use, so this example publishes host port `18080` on loopback only:
 
 ```sh
-podman rm -f scsi-adapter 2>/dev/null || true
+podman rm -f odpapi-scsi-adapter 2>/dev/null || true
 podman run --detach \
-  --name scsi-adapter \
+  --name odpapi-scsi-adapter \
   --userns=keep-id \
   --group-add=keep-groups \
   --security-opt label=disable \
   --device=/dev/sch0:/dev/sch0:r \
   --publish 127.0.0.1:18080:8080 \
-  localhost/scsi-adapter:latest
+  localhost/odpapi-scsi-adapter:latest
 ```
 
 The runtime user needs read access to `/dev/sch0` (often through the host
 `cdrom` group). Verify with `ls -l /dev/sch0` and `id`. Pass additional changer
 nodes with more `--device` options and add matching `SCSIChangerDevice` lines
-to `odpapi-scsi.conf` before building the image. Do not use `--privileged`.
+to `podman/apache/odpapi-scsi-adapter.conf` in this adapter directory before
+building the image. Do not use `--privileged`.
 
 Test the endpoints with:
 

@@ -17,7 +17,7 @@ FROM registry.access.redhat.com/ubi9/httpd-24
 
 COPY --from=build /build/mod_odpapi_scsi.so /etc/httpd/modules/mod_odpapi_scsi.so
 COPY --from=build /build/_deps/cjson-build/libcjson.so* /usr/lib64/
-COPY adapter-scsi/podman/apache/odpapi-scsi.conf /etc/httpd/conf.d/odpapi-scsi.conf
+COPY adapter-scsi/podman/apache/odpapi-scsi-adapter.conf /etc/httpd/conf.d/odpapi-scsi-adapter.conf
 
 EXPOSE 8080
 
