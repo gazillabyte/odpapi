@@ -31,6 +31,10 @@ and session tokens are not part of the protocol examples. Implementations
 should use HTTPS in real deployments and must manage credentials outside source
 code and example files.
 
+All documentation, examples, fixtures, logs, and test payloads in this
+repository must use fabricated values. Do not add operational records,
+customer identifiers, provider exports, credentials, or copied payloads.
+
 ## Protocol operations
 
 ODPAPI operations include:
@@ -65,8 +69,8 @@ globally meaningful.
 
 - `include/odpapi.h` — public C helper API and protocol status enumerations.
 - `src/odpapi.c` — JSON request lookup and response construction helpers.
-- `test/` — sample JSON request and response documents. They are not a live
-  integration test suite.
+- `test/` — sample JSON request and response documents using fabricated values.
+  They are not an operational integration test suite.
 - [Project Wiki](https://github.com/gazillabyte/odpapi/wiki) — protocol overview,
   operations, and integration guidance.
 - `ADAPTER-CONTRACT.md` — technical interoperability expectations for

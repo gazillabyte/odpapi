@@ -30,6 +30,11 @@ the container from the same checkout. The container build must use the locally
 built importer and module; it must not download customer-specific software or
 embed credentials.
 
+All examples and test fixtures in this document are fabricated. Do not commit
+provider exports, customer records, copied report rows, credentials, or other
+operational data; supply any endpoint details and secrets through runtime
+configuration only.
+
 ## Current scope
 
 The module accepts GET requests with URL arguments and POST requests with an
@@ -48,7 +53,7 @@ not provide a write API.
 
 ## IRM inventory semantics
 
-The inventory report observed in the IRM fixtures is CSV with this header:
+The synthetic IRM fixture report is CSV with this header:
 
 ```text
 Cust #,Media#,Logical Vault,DRP,Rtn-date,MT,Description,CONT/OM,Slot #,Date In,In Employee,Date Out,Out Employee
@@ -62,20 +67,20 @@ retained in the database. It must use
 bounded field storage and
 must not depend on NUL termination in remote records. Employee columns are
 used only while locating the outbound date and are discarded; employee names
-must never be stored in the Berkeley DB files or returned by the adapter. The test reports also
-contain legacy rows with unquoted commas in employee names; the parser locates
+must never be stored in the Berkeley DB files or returned by the adapter. The synthetic reports also
+contain compatibility rows with unquoted commas in employee names; the parser locates
 the outbound date by its date shape and tolerates those extra employee-field
-commas. The legacy C struct is useful for identifying the fields, but is not
+commas. The compatibility C struct is useful for identifying the fields, but is not
 the wire format of this report.
 
-The report may contain only tapes currently at Iron Mountain. Each record is
+The fixture report models tapes held by Iron Mountain. Each record is
 classified by comparing its inbound and outbound dates. An outbound date equal
-to or later than the inbound date places the tape in the customer's
+to or later than the inbound date places the tape in the synthetic account's
 `CUSTOMERIDOUT` library; an inbound date later than the outbound date places it
 in `CUSTOMERIDIN`. A missing outbound date preserves the default of
 `CUSTOMERIDIN`, which supports an IN-only report.
 
-Operational warning: keep the source inventory scope consistent across imports.
+Fixture consistency warning: keep the source inventory scope consistent across imports.
 If the adapter starts with a complete inventory containing both IN and OUT
 records and later switches to an IN-only inventory, OUT records will not
 receive subsequent source updates and can remain stale from the consumer's
@@ -187,7 +192,7 @@ The SFTP host, port, account, credential material, remote root, and local
 database path are supplied to Podman at runtime; none are compiled into the
 image.
 
-The importer follows the existing IRM CLI convention:
+The importer follows the documented fixture convention:
 
 ```text
 remote root/archive/inventory_*
@@ -219,8 +224,8 @@ CUSTOMERID-VOLUMEID
 `CustomerID` and `Media#` identify the first record retained for an IRM
 lookup, but the reports can contain later rows with the same pair. The loader
 keeps the first occurrence, reports every later occurrence to stderr, and
-continues loading the snapshot. This preserves the historical first-row
-behavior while making duplicate data visible to operators.
+continues loading the snapshot. This preserves the documented first-row
+behavior while making duplicate fixture data visible to operators.
 
 The value contains the parsed inbound, outbound, and optional return-date
 structures and an integer flags field. The `IN` flag is set when the record is in the

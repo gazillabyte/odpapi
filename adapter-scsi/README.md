@@ -9,6 +9,11 @@ It does not log in to iSCSI, rescan the host, create device nodes, reserve the
 changer, or move media. Host administration and the backup/library-management
 software remain responsible for those operations.
 
+All identifiers, device paths, credentials, and payloads shown here are
+examples only. Keep operational inventory, device captures, and secrets out of
+the repository; provide them through runtime configuration or local test
+fixtures.
+
 ## ODPAPI v1 endpoints
 
 The routes use the ODPAPI v1 format:
@@ -94,7 +99,7 @@ cmake --build build/scsi --parallel
 ctest --test-dir build/scsi --output-on-failure
 ```
 
-The live module is `build/scsi/mod_odpapi_scsi.so`; the Apache source is
+The built module is `build/scsi/mod_odpapi_scsi.so`; the Apache source is
 `src/odpapi_scsi.c`. Unit tests do not require SCSI hardware.
 
 ## Apache configuration
