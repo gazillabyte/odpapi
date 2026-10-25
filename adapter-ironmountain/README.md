@@ -5,6 +5,9 @@ adapter project. It builds both the SFTP importer CLI and the Apache module,
 and contains the Podman image setup used to run them together. It uses the
 ODPAPI C helper library for request inspection and response construction.
 
+This is an independent adapter. It is not maintained or endorsed by Iron
+Mountain.
+
 The checkout layout is:
 
 ```text
