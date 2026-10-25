@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <ctype.h>
 
+/** @brief Protocol version emitted in response metadata. */
 #define ODPAPI_VERSION "1.0"
 
 #ifdef WIN32
@@ -19,6 +20,16 @@
 #define strdup _strdup
 #endif
 
+/**
+ * @brief Convert a common ODPAPI result code to its standard text.
+ * @param buffer Writable destination buffer.
+ * @param length Capacity of @p buffer in bytes.
+ * @param error Common ODPAPI result code to format.
+ * @return @p buffer, or NULL when @p buffer is NULL.
+ *
+ * A zero length leaves the buffer untouched. A nonzero-sized buffer receives
+ * a NUL-terminated string.
+ */
 char* odpapi_format_common_result_text(char* buffer,
 	                                   size_t length,
 									   enum ODPAPI_COMMONERROR error)
@@ -78,6 +89,15 @@ char* odpapi_format_common_result_text(char* buffer,
 	return buffer;
 }
 
+/**
+ * @brief Complete the standard response fields for a transaction.
+ * @param root Response document to update.
+ * @param error Request-wide ODPAPI result code.
+ * @param hint Optional request-wide result hint; empty hints are omitted.
+ * @param start Start timestamp used to calculate elapsed whole seconds.
+ *
+ * The response object is created when the caller has not already created one.
+ */
 void odpapi_response_epilog(cJSON *root,
 							enum ODPAPI_COMMONERROR error,
 							char* hint,
@@ -128,6 +148,14 @@ void odpapi_response_epilog(cJSON *root,
 	}
 }
 
+/**
+ * @brief Validate the required Inventory source-library argument.
+ * @param root Response document used for a validation error.
+ * @param start Start timestamp used by the error response.
+ * @param source_library UUID of the library to inventory.
+ * @return Nonzero when the argument is a syntactically valid UUID; otherwise
+ * zero after writing the standard error response.
+ */
 int odpapi_inventory_validate_args(cJSON *root, time_t start,
 	const char *source_library)
 {
@@ -158,6 +186,14 @@ int odpapi_inventory_validate_args(cJSON *root, time_t start,
 	return 1;
 }
 
+/**
+ * @brief Validate the required Find object identifier.
+ * @param root Response document used for a validation error.
+ * @param start Start timestamp used by the error response.
+ * @param id Literal object identifier to find.
+ * @return Nonzero when @p id is nonempty; otherwise zero after writing the
+ * standard missing-argument response.
+ */
 int odpapi_find_validate_args(cJSON *root, time_t start, const char *id)
 {
 	if (!id || !*id) {
@@ -168,6 +204,12 @@ int odpapi_find_validate_args(cJSON *root, time_t start, const char *id)
 	return 1;
 }
 
+/**
+ * @brief Append a library UUID to a Find response array.
+ * @param responsearray Destination JSON array.
+ * @param guid Library UUID to append.
+ * @return Nonzero when appended; zero for invalid input or allocation failure.
+ */
 int odpapi_find_response_helper(cJSON *responsearray, const char *guid)
 {
 	cJSON *item;
@@ -179,12 +221,29 @@ int odpapi_find_response_helper(cJSON *responsearray, const char *guid)
 	return 1;
 }
 
+/**
+ * @brief Serialize a response document as formatted JSON.
+ * @param root JSON document to serialize; ownership remains with the caller.
+ * @return Heap-allocated JSON text releasable with cJSON_free(), or NULL when
+ * serialization fails.
+ */
 char *odpapi_response_print(cJSON *root)
 {
 	if (!root) return NULL;
 	return cJSON_Print(root);
 }
 
+/**
+ * @brief Create the standard ODPAPI metadata and response prolog.
+ * @param root JSON document that receives the metadata and response objects.
+ * @param adaptername Adapter or service name stored in `meta.creator`.
+ * @param copyright Author or copyright text stored in `meta.author`.
+ * @param builddate Build date stored in `meta.built`.
+ * @param buildtime Build time stored in `meta.built`.
+ * @param token Optional token stored in `meta.token`.
+ * @return The newly created response object, owned by @p root, or NULL on
+ * allocation failure or when @p root is NULL.
+ */
 cJSON* odpapi_response_prolog(cJSON *root,
 							  const char* adaptername,
 							  const char* copyright,
@@ -260,6 +319,11 @@ cJSON* odpapi_response_prolog(cJSON *root,
 	return response;
 }
 
+/**
+ * @brief Locate the `request` member of a parsed ODPAPI root object.
+ * @param root Parsed JSON root object.
+ * @return The direct child named `request`, or NULL when it is absent.
+ */
 cJSON* odpapi_request_get_request(cJSON *root)
 {
 	cJSON* request = NULL;
@@ -282,6 +346,12 @@ cJSON* odpapi_request_get_request(cJSON *root)
 	return request;
 }
 
+/**
+ * @brief Locate a direct JSON child by exact, case-sensitive key name.
+ * @param json JSON object or branch whose direct children are searched.
+ * @param key NUL-terminated child key.
+ * @return The matching child, or NULL when the input is invalid or absent.
+ */
 cJSON* odpapi_request_get_value(cJSON *json, char* key)
 {
 	cJSON* result = NULL;
@@ -304,6 +374,16 @@ cJSON* odpapi_request_get_value(cJSON *json, char* key)
 	return result;
 }
 
+/**
+ * @brief Append one per-object Move result to a response array.
+ * @param responsearray Destination JSON array.
+ * @param status Per-object Move status.
+ * @param sequence Request object sequence number.
+ * @param id Optional object identifier.
+ * @param type Optional object type.
+ * @param movedate Optional protocol-formatted movement date.
+ * @param hint Optional status text; a nonempty value replaces generated text.
+ */
 void odpapi_move_response_helper(cJSON *responsearray,
 							     enum ODPAPI_MOVESTATUS status,
 								 int sequence,
@@ -369,6 +449,24 @@ void odpapi_move_response_helper(cJSON *responsearray,
 	}
 }
 
+/**
+ * @brief Append one Inventory object result to a response array.
+ * @param responsearray Destination JSON array.
+ * @param status Inventory status.
+ * @param sequence Request object sequence number.
+ * @param id Optional object identifier.
+ * @param type Optional object type.
+ * @param description Optional object description.
+ * @param slot 1-based library slot; zero omits the field.
+ * @param movedate Optional movement date.
+ * @param target Optional target library identifier.
+ * @param nextmove Optional scheduled or predicted movement date.
+ * @param library Library identifier for external or inbound objects.
+ * @param lastmove Optional last-move timestamp.
+ * @param encrypted Tri-state encryption value; unknown omits the field.
+ * @param scratch Tri-state scratch-media value; unknown omits the field.
+ * @param automatemovedate Nonzero to include the automatic-move-date flag.
+ */
 void odpapi_inventory_response_helper(cJSON *responsearray,
 							          enum ODPAPI_INVENTORYSTATUS status,
 								      int sequence,
@@ -454,6 +552,26 @@ void odpapi_inventory_response_helper(cJSON *responsearray,
 	}
 }
 
+/**
+ * @brief Append one library description to a List response array.
+ * @param responsearray Destination JSON array.
+ * @param sequence Response sequence number.
+ * @param description Library description.
+ * @param guid Library UUID.
+ * @param scope Optional library scope.
+ * @param capacity Total capacity; UINT_MAX omits the field.
+ * @param capacityused Current used capacity.
+ * @param movingin Objects moving into the library; UINT_MAX omits the field.
+ * @param movingout Objects moving out of the library; UINT_MAX omits the field.
+ * @param scratch Number of scratch objects; UINT_MAX omits the field.
+ * @param minscratch Minimum scratch-object count; UINT_MAX omits the field.
+ * @param automatemovedate Nonzero to include the automatic-move-date flag.
+ * @param latitude Library latitude.
+ * @param longitude Library longitude.
+ * @param targetguids NULL-terminated array of target library UUIDs.
+ * @return The newly appended library object, or NULL on invalid input or
+ * allocation failure.
+ */
 cJSON* odpapi_list_response_helper(cJSON *responsearray,
 							       int sequence,
 								   char* description,
@@ -542,6 +660,15 @@ cJSON* odpapi_list_response_helper(cJSON *responsearray,
 	return response;
 }
 
+/**
+ * @brief Append one per-object Scan result to a response array.
+ * @param responsearray Destination JSON array.
+ * @param status Per-object Scan status.
+ * @param sequence Request object sequence number.
+ * @param id Optional object identifier.
+ * @param type Optional object type.
+ * @param hint Optional status text.
+ */
 void odpapi_scan_response_helper(cJSON *responsearray,
 							    enum ODPAPI_SCANSTATUS status,
 							    int sequence,
@@ -574,6 +701,14 @@ void odpapi_scan_response_helper(cJSON *responsearray,
 	}
 }
 
+/**
+ * @brief Append one per-object Add result to a response array.
+ * @param responsearray Destination JSON array.
+ * @param status Per-object Add status.
+ * @param sequence Request object sequence number.
+ * @param id Optional object identifier.
+ * @param hint Optional status text.
+ */
 void odpapi_add_response_helper(cJSON *responsearray,
 							    enum ODPAPI_ADDSTATUS status,
 							    int sequence,
