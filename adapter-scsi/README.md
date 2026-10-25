@@ -14,6 +14,18 @@ examples only. Keep operational inventory, device captures, and secrets out of
 the repository; provide them through runtime configuration or local test
 fixtures.
 
+## Deployment security requirements
+
+**Do not expose this adapter to the public internet. Always deploy it behind
+a secure corporate firewall, with access restricted to approved internal
+clients.** This applies to both the Apache endpoint and any reverse proxy
+in front of it. HTTPS and authentication do not make public exposure an
+approved deployment.
+
+Protect all ODPAPI endpoints, including Query, with the deployment's approved
+authentication and authorization policy. Use HTTPS for client connections
+carrying credentials or inventory data.
+
 ## ODPAPI v1 endpoints
 
 The routes use the ODPAPI v1 format:
@@ -149,7 +161,7 @@ The multi-stage UBI build compiles the Apache module and runs CTest. Use
 ## Deploy with Podman
 
 The image listens on container port `8080`. Host port `8080` may already be in
-use, so this example publishes host port `18080`:
+use, so this example publishes host port `18080` on loopback only:
 
 ```sh
 podman rm -f scsi-adapter 2>/dev/null || true
@@ -159,7 +171,7 @@ podman run --detach \
   --group-add=keep-groups \
   --security-opt label=disable \
   --device=/dev/sch0:/dev/sch0:r \
-  --publish 18080:8080 \
+  --publish 127.0.0.1:18080:8080 \
   localhost/scsi-adapter:latest
 ```
 
@@ -178,9 +190,12 @@ curl -G --data-urlencode 'id=TAPE001' \
   http://127.0.0.1:18080/dpapi-v1/find.json
 ```
 
-If clients are remote, allow the chosen host port through the host firewall,
-for example `sudo firewall-cmd --permanent --add-port=18080/tcp` followed by
-`sudo firewall-cmd --reload`.
+For approved remote corporate clients, use an internal HTTPS reverse proxy
+behind the corporate firewall, with the approved authentication policy. If
+binding the adapter directly to a private host interface instead, restrict
+host firewall access to approved client addresses. Do not publish the adapter
+or proxy on a public interface accessible from the internet or open the host
+port to unrestricted traffic.
 
 ## Concurrency and limitations
 
