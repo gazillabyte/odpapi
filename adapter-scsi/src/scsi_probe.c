@@ -3,6 +3,7 @@
 #include "scsi_adapter.h"
 
 #include <errno.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <linux/chio.h>
 #include <limits.h>
@@ -50,6 +51,51 @@ static int read_sysfs_value(const char *device_name, const char *attribute,
 	return value[0] ? 0 : -1;
 }
 
+static int read_vpd_serial(const char *device_name, char *value,
+	size_t value_length)
+{
+	char path[256];
+	unsigned char buffer[512];
+	FILE *file;
+	size_t count;
+	size_t start = 4;
+	size_t end;
+	size_t output = 0;
+	if (snprintf(path, sizeof(path),
+		"/sys/class/scsi_changer/%s/device/vpd_pg80", device_name) >=
+		(int)sizeof(path)) return -1;
+	file = fopen(path, "rb");
+	if (!file) return -1;
+	count = fread(buffer, 1, sizeof(buffer), file);
+	fclose(file);
+	if (count <= start) return -1;
+	end = count;
+	if (count >= 4 && (size_t)((buffer[2] << 8) | buffer[3]) + 4 < end)
+		end = (size_t)((buffer[2] << 8) | buffer[3]) + 4;
+	while (end > start && (buffer[end - 1] == ' ' || buffer[end - 1] == '\t' ||
+		buffer[end - 1] == '\r' || buffer[end - 1] == '\n')) --end;
+	while (start < end && output + 1 < value_length) {
+		unsigned char character = buffer[start++];
+		if (isprint(character)) value[output++] = (char)character;
+	}
+	value[output] = '\0';
+	return output ? 0 : -1;
+}
+
+static void discover_identity(const char *path, char *identity,
+	size_t identity_length)
+{
+	const char *device_name = strrchr(path, '/');
+	char serial[256];
+	device_name = device_name ? device_name + 1 : path;
+	if (read_sysfs_value(device_name, "serial", serial, sizeof(serial)) == 0 ||
+		read_vpd_serial(device_name, serial, sizeof(serial)) == 0) {
+		snprintf(identity, identity_length, "serial:%s", serial);
+		return;
+	}
+	snprintf(identity, identity_length, "dev:%s", path);
+}
+
 static void discover_description(const char *path, char *description,
 	size_t description_length)
 {
@@ -87,6 +133,51 @@ static int read_tape_value(int drive, const char *attribute, char *value,
 	fclose(file);
 	trim_copy(value, value_length, buffer);
 	return value[0] ? 0 : -1;
+}
+
+static int read_tape_vpd_serial(int drive, char *value, size_t value_length)
+{
+	char path[PATH_MAX];
+	unsigned char buffer[512];
+	FILE *file;
+	size_t count;
+	size_t start = 4;
+	size_t end;
+	size_t output = 0;
+	if (snprintf(path, sizeof(path), "/sys/class/scsi_tape/st%d/device/vpd_pg80",
+		drive) >= (int)sizeof(path)) return -1;
+	file = fopen(path, "rb");
+	if (!file) return -1;
+	count = fread(buffer, 1, sizeof(buffer), file);
+	fclose(file);
+	if (count <= start) return -1;
+	end = count;
+	if (count >= 4 && (size_t)((buffer[2] << 8) | buffer[3]) + 4 < end)
+		end = (size_t)((buffer[2] << 8) | buffer[3]) + 4;
+	while (end > start && (buffer[end - 1] == ' ' || buffer[end - 1] == '\t' ||
+		buffer[end - 1] == '\r' || buffer[end - 1] == '\n')) --end;
+	while (start < end && output + 1 < value_length) {
+		unsigned char character = buffer[start++];
+		if (isprint(character)) value[output++] = (char)character;
+	}
+	value[output] = '\0';
+	return output ? 0 : -1;
+}
+
+static void discover_drive_identity(int device_number,
+	const char *changer_path, int element, char *identity, size_t identity_length)
+{
+	char serial[256];
+	if (device_number >= 0 &&
+		(read_tape_value(device_number, "serial", serial, sizeof(serial)) == 0 ||
+		 read_tape_vpd_serial(device_number, serial, sizeof(serial)) == 0)) {
+		snprintf(identity, identity_length, "serial:%s", serial);
+		return;
+	}
+	if (device_number >= 0)
+		snprintf(identity, identity_length, "dev:/dev/st%d", device_number);
+	else
+		snprintf(identity, identity_length, "dev:%s:drive:%d", changer_path, element);
 }
 
 static int read_tape_address(int drive, int *target, int *lun)
@@ -251,6 +342,7 @@ int scsi_probe_library(const char *path, struct scsi_library_inventory *result,
 	}
 	memset(result, 0, sizeof(*result));
 	strncpy(result->device_path, path, sizeof(result->device_path) - 1);
+	discover_identity(path, result->identity, sizeof(result->identity));
 	discover_description(path, result->description, sizeof(result->description));
 	result->slots = params.cp_nslots;
 	result->drives = params.cp_ndrives;
@@ -259,6 +351,9 @@ int scsi_probe_library(const char *path, struct scsi_library_inventory *result,
 	for (slot = 0; slot < params.cp_ndrives; ++slot)
 		discover_drive_description(fd, slot, &result->drive_device_numbers[slot],
 			result->drive_descriptions[slot], sizeof(result->drive_descriptions[slot]));
+	for (slot = 0; slot < params.cp_ndrives; ++slot)
+		discover_drive_identity(result->drive_device_numbers[slot], path, slot,
+			result->drive_identities[slot], sizeof(result->drive_identities[slot]));
 	result->volume_count = 0;
 	result->volumes = calloc((size_t)params.cp_nslots + (size_t)params.cp_nportals +
 		(size_t)params.cp_ndrives, sizeof(*result->volumes));

@@ -23,12 +23,24 @@ char *scsi_unknown_json(const char *hint);
 
 typedef struct {
 	const char *path;
-	const char *guid;
 	const char *media_type;
 } scsi_changer_config;
 typedef struct { const apr_array_header_t *changers; } scsi_server_config;
 
 module AP_MODULE_DECLARE_DATA odpapi_scsi_module;
+
+static int valid_uuid(const char *value)
+{
+	static const unsigned int dashes[] = { 8, 13, 18, 23 };
+	unsigned int i;
+	if (!value || strlen(value) != 36) return 0;
+	for (i = 0; i < 36; ++i) {
+		if (i == dashes[0] || i == dashes[1] || i == dashes[2] || i == dashes[3]) {
+			if (value[i] != '-') return 0;
+		} else if (!isxdigit((unsigned char)value[i])) return 0;
+	}
+	return 1;
+}
 
 static void *create_config(apr_pool_t *pool, server_rec *server)
 {
@@ -38,43 +50,25 @@ static void *create_config(apr_pool_t *pool, server_rec *server)
 	return config;
 }
 
-static int valid_guid(const char *value)
-{
-	static const unsigned int dashes[] = { 8, 13, 18, 23 };
-	unsigned int i;
-
-	if (!value || strlen(value) != 36) return 0;
-	for (i = 0; i < 36; ++i) {
-		if (i == dashes[0] || i == dashes[1] || i == dashes[2] || i == dashes[3]) {
-			if (value[i] != '-') return 0;
-		} else if (!isxdigit((unsigned char)value[i])) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
 static const char *set_changer(cmd_parms *cmd, void *unused, const char *path,
-	const char *guid, const char *media_type)
+	const char *media_type)
 {
 	scsi_server_config *config = ap_get_module_config(cmd->server->module_config,
 		&odpapi_scsi_module);
 	scsi_changer_config *entry;
 	(void)unused;
 	if (!path || !*path) return "SCSIChangerDevice requires a device path";
-	if (!valid_guid(guid)) return "SCSIChangerDevice requires a valid UUID";
 	if (media_type && strlen(media_type) >= SCSI_ADAPTER_MEDIA_TYPE_MAX)
 		return "SCSIChangerDevice media type is too long";
 	entry = (scsi_changer_config *)apr_array_push((apr_array_header_t *)config->changers);
 	entry->path = path;
-	entry->guid = guid;
 	entry->media_type = media_type && *media_type ? media_type : "tape";
 	return NULL;
 }
 
 static const command_rec commands[] = {
-	AP_INIT_TAKE23("SCSIChangerDevice", set_changer, NULL, RSRC_CONF,
-		"Linux SCSI media changer device node, stable changer GUID, and optional media type"),
+	AP_INIT_TAKE12("SCSIChangerDevice", set_changer, NULL, RSRC_CONF,
+		"Linux SCSI media changer device node and optional media type"),
 	{ NULL }
 };
 
@@ -246,7 +240,7 @@ static int handler(request_rec *request)
 		return OK;
 	}
 	if (inventory_request && (!source_library || !*source_library ||
-		!valid_guid(source_library))) {
+		!valid_uuid(source_library))) {
 		serialized = scsi_inventory_json(NULL, 0, source_library);
 		if (!serialized) return HTTP_INTERNAL_SERVER_ERROR;
 		ap_set_content_type(request, "application/json");
@@ -280,8 +274,6 @@ static int handler(request_rec *request)
 				"SCSI changer probe failed for %s: %s", changers[i].path, error);
 		}
 		else {
-			strncpy(libraries[successful].changer_guid, changers[i].guid,
-				sizeof(libraries[successful].changer_guid) - 1);
 			strncpy(libraries[successful].media_type, changers[i].media_type,
 				sizeof(libraries[successful].media_type) - 1);
 			++successful;

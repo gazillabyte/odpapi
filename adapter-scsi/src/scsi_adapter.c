@@ -19,12 +19,12 @@ static uint32_t library_hash(const char *value, uint32_t seed)
 	return hash;
 }
 
-static void library_guid(const char *changer_guid, const char *element_class,
+static void library_guid(const char *identity, const char *element_class,
 	char *guid, size_t length)
 {
-	char key[128];
+	char key[512];
 	uint32_t a, b, c, d;
-	snprintf(key, sizeof(key), "%s:%s", changer_guid, element_class);
+	snprintf(key, sizeof(key), "%s:%s", identity, element_class);
 	a = library_hash(key, 2166136261U);
 	b = library_hash(key, 0x9e3779b9U);
 	c = library_hash(key, 0x85ebca6bU);
@@ -67,7 +67,13 @@ static void volume_guid(const struct scsi_library_inventory *library,
 	else {
 		snprintf(element_class, sizeof(element_class), "drive:%d", volume->element);
 	}
-	library_guid(library->changer_guid, element_class, guid, guid_length);
+	if (volume->element_type == CHET_DT &&
+		volume->element >= 0 && volume->element < SCSI_ADAPTER_MAX_DRIVES &&
+		library->drive_identities[volume->element][0] != '\0')
+		library_guid(library->identity, library->drive_identities[volume->element],
+			guid, guid_length);
+	else
+		library_guid(library->identity, element_class, guid, guid_length);
 }
 
 char *scsi_list_json(const struct scsi_library_inventory *libraries,
@@ -99,16 +105,17 @@ char *scsi_list_json(const struct scsi_library_inventory *libraries,
 		int drive;
 		int target_count;
 
-		library_guid(libraries[i].changer_guid, "storage", storage_guid,
+		library_guid(libraries[i].identity, "storage", storage_guid,
 			sizeof(storage_guid));
-		library_guid(libraries[i].changer_guid, "capio", capio_guid,
+		library_guid(libraries[i].identity, "capio", capio_guid,
 			sizeof(capio_guid));
-		library_guid(libraries[i].changer_guid, "transport", transport_guid,
+		library_guid(libraries[i].identity, "transport", transport_guid,
 			sizeof(transport_guid));
 		for (drive = 0; drive < libraries[i].drives; ++drive) {
 			char drive_class[32];
 			snprintf(drive_class, sizeof(drive_class), "drive:%d", drive);
-			library_guid(libraries[i].changer_guid, drive_class, drive_guids[drive],
+			library_guid(libraries[i].identity, libraries[i].drive_identities[drive][0] ?
+				libraries[i].drive_identities[drive] : drive_class, drive_guids[drive],
 				sizeof(drive_guids[drive]));
 		}
 
@@ -281,21 +288,22 @@ static int library_guid_is_configured(const struct scsi_library_inventory *libra
 	char guid[37];
 	int drive;
 	if (library->slots > 0) {
-		library_guid(library->changer_guid, "storage", guid, sizeof(guid));
+		library_guid(library->identity, "storage", guid, sizeof(guid));
 		if (strcmp(guid, source_library) == 0) return 1;
 	}
 	if (library->portals > 0) {
-		library_guid(library->changer_guid, "capio", guid, sizeof(guid));
+		library_guid(library->identity, "capio", guid, sizeof(guid));
 		if (strcmp(guid, source_library) == 0) return 1;
 	}
 	for (drive = 0; drive < library->drives; ++drive) {
 		char element_class[32];
 		snprintf(element_class, sizeof(element_class), "drive:%d", drive);
-		library_guid(library->changer_guid, element_class, guid, sizeof(guid));
+		library_guid(library->identity, library->drive_identities[drive][0] ?
+			library->drive_identities[drive] : element_class, guid, sizeof(guid));
 		if (strcmp(guid, source_library) == 0) return 1;
 	}
 	if (library->transports > 0) {
-		library_guid(library->changer_guid, "transport", guid, sizeof(guid));
+		library_guid(library->identity, "transport", guid, sizeof(guid));
 		if (strcmp(guid, source_library) == 0) return 1;
 	}
 	return 0;

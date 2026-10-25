@@ -17,10 +17,11 @@ struct scsi_volume {
 
 struct scsi_library_inventory {
 	char device_path[256];
-	char changer_guid[37];
+	char identity[256];
 	char description[128];
 	char media_type[SCSI_ADAPTER_MEDIA_TYPE_MAX];
 	char drive_descriptions[SCSI_ADAPTER_MAX_DRIVES][128];
+	char drive_identities[SCSI_ADAPTER_MAX_DRIVES][256];
 	int drive_device_numbers[SCSI_ADAPTER_MAX_DRIVES];
 	int slots;
 	int drives;

@@ -67,10 +67,16 @@ When a tape is resident in a drive library, its inventory object also includes
 the drive description (vendor/model and `/dev/stN` path). Storage-slot and
 CAP/IO inventory objects do not include a description.
 
-Each `SCSIChangerDevice` directive supplies a stable changer GUID. Logical
-library GUIDs are deterministically derived from it and the element class,
-including drive number. Keep that configured GUID unchanged across upgrades
-and device-path changes so library identities remain addressable.
+Each `SCSIChangerDevice` directive supplies a changer device path and optional
+media type. The adapter discovers a stable changer serial number from SCSI VPD
+data and uses it as the identity namespace. Logical library GUIDs are derived
+from that identity and the element class. Drive serial numbers are preferred
+for drive identities. If serial data is unavailable, the relevant `/dev` path
+is used as a fallback and the resulting stability limitation is logged.
+The current probe data is sufficient for a future move operation to build an
+in-memory GUID-to-device-element mapping, allowing source and target GUIDs to
+be resolved back to Linux media-changer elements. That mapping would be
+rebuilt from the current SCSI probe results after a restart.
 
 ## Build and test
 
@@ -93,13 +99,12 @@ The live module is `build/scsi/mod_odpapi_scsi.so`; the Apache source is
 
 ## Apache configuration
 
-`SCSIChangerDevice` takes a device path, stable changer GUID, and an optional
-media type. If the media type is omitted, inventory uses `"tape"`. Add one
-line per changer:
+`SCSIChangerDevice` takes a device path and an optional media type. If the
+media type is omitted, inventory uses `"tape"`. Add one line per changer:
 
 ```apache
 LoadModule odpapi_scsi_module /etc/httpd/modules/mod_odpapi_scsi.so
-SCSIChangerDevice /dev/sch0 00000000-0000-5000-8000-000000000001 LTO
+SCSIChangerDevice /dev/sch0 LTO
 
 <Location /dpapi-v1>
     SetHandler scsi-adapter

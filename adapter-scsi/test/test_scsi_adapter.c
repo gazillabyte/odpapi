@@ -10,7 +10,7 @@ int main(void)
 	struct scsi_volume volume = { "TAPE001", 1, 3, 1, 1 };
 	struct scsi_library_inventory library = {
 		.device_path = "/dev/changer",
-		.changer_guid = "00000000-0000-5000-8000-000000000001",
+		.identity = "serial:synthetic-changer-1",
 		.description = "Test media changer",
 		.media_type = "LTO",
 		.slots = 10,

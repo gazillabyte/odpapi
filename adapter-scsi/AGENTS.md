@@ -22,8 +22,12 @@ These instructions supplement the repository-level `AGENTS.md`.
 - Probe only `SCSIChangerDevice` paths explicitly present in Apache config.
 - Keep the host iSCSI initiator, rescans, device-node creation, and device
   ownership outside the container.
-- Preserve stable configured changer GUIDs; logical library GUIDs derive from
-  them and must remain addressable across upgrades and device renames.
+- Derive stable GUID namespaces from discovered SCSI serial/VPD identity, with
+  the configured `/dev` path as the documented fallback; do not add a static
+  UUID value to the configuration.
+- Keep generated GUIDs resolvable through the runtime GUID-to-device-element
+  map so future move operations can translate source and target GUIDs back to
+  Linux media-changer elements.
 - Treat Storage, CAP/IO (SCSI import/export), each Drive, and Transport as
   separate logical libraries. CAP/IO is not an ODPAPI Pass-through library.
   Storage capacity is the number of storage slots. Each drive has capacity one.
