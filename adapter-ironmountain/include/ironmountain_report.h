@@ -63,7 +63,7 @@ struct irm_media_key {
 	char volume_id[IRM_ID_MAX];
 };
 
-/** Parse one synthetic SecureSync-style CSV row into @p record. */
+/** Parse one synthetic IRM inventory CSV row into @p record. */
 int irm_parse_record(const char *line, size_t length, struct irm_record *record,
 	char *error, size_t error_length);
 

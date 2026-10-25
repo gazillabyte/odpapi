@@ -1,5 +1,5 @@
 /**
- * Read-only Apache adapter for the local Iron Mountain SecureSync snapshot.
+ * Read-only Apache adapter for the local Iron Mountain snapshot.
  * SFTP and credentials belong to ironmountain-sync.
  */
 #include <httpd.h>
@@ -55,7 +55,7 @@ static const command_rec commands[] = {
 static cJSON *new_response(enum ODPAPI_COMMONERROR result, const char *hint)
 {
 	cJSON *root = cJSON_CreateObject();
-	if (!root || !odpapi_response_prolog(root, "ODPAPI Iron Mountain SecureSync adapter",
+	if (!root || !odpapi_response_prolog(root, "ODPAPI Iron Mountain adapter",
 		"Copyright 2026 GazillaByte Pty Ltd", __DATE__, __TIME__, NULL)) {
 		cJSON_Delete(root);
 		return NULL;
@@ -69,7 +69,7 @@ static cJSON *capabilities_response(void)
 	cJSON *root = cJSON_CreateObject();
 	cJSON *response;
 	cJSON *functions;
-	if (!root || !odpapi_response_prolog(root, "ODPAPI Iron Mountain SecureSync adapter",
+	if (!root || !odpapi_response_prolog(root, "ODPAPI Iron Mountain adapter",
 		"Copyright 2026 GazillaByte Pty Ltd", __DATE__, __TIME__, NULL)) {
 		cJSON_Delete(root);
 		return NULL;

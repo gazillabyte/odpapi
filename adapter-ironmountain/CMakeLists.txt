@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(IronMountainSecureSyncAdapter VERSION 0.1.0 LANGUAGES C)
+project(IronMountainAdapter VERSION 0.1.0 LANGUAGES C)
 
 set(ODPAPI_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." CACHE PATH
     "Path to the ODPAPI source tree")

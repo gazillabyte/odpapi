@@ -4,8 +4,8 @@ Everything in this directory is fabricated test data. Do not replace it with
 provider exports or operational records, and do not add real credentials to
 the fixture or its examples.
 
-This directory is a safe, synthetic SecureSync-style SFTP fixture. The expected
-remote layout is:
+This directory contains synthetic IRM inventory reports modeling those
+created by SecureSync and retrieved over SFTP. The expected remote layout is:
 
     <remote-root>/
     └── archive/

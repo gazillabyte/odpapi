@@ -1,6 +1,6 @@
 # `mod_odpapi_ironmountain.so`
 
-This directory is the self-contained open-source Iron Mountain SecureSync
+This directory is the self-contained open-source Iron Mountain
 adapter project. It builds both the SFTP importer CLI and the Apache module,
 and contains the Podman image setup used to run them together. It uses the
 ODPAPI C helper library for request inspection and response construction.
@@ -48,16 +48,17 @@ configuration only.
 The module accepts GET requests with URL arguments and POST requests with an
 ODPAPI JSON `request` object. For POST, `source_library` and `id` may be
 members of the request object; URL arguments take precedence. It returns a
-standard ODPAPI JSON response. SecureSync is a read-only, report-backed
-adapter: the importer reads timestamped IRM inventory files over SFTP and the
-Apache module reads the resulting local Berkeley DB snapshot. It exposes only:
+standard ODPAPI JSON response. The Iron Mountain adapter is read-only and
+report-backed: SecureSync creates the timestamped IRM inventory reports,
+the importer retrieves them over SFTP, and the Apache module reads the
+resulting local Berkeley DB snapshot. It exposes only:
 
 - library listing;
 - tape inventory/listing; and
 - local tape lookup (`find`).
 
-Move, add, update, and scan operations are unsupported because SecureSync does
-not provide a write API.
+Move, add, update, and scan operations are unsupported because this adapter
+only imports inventory reports and serves the resulting local snapshot.
 
 ## IRM inventory semantics
 

@@ -28,10 +28,10 @@ the project's Apache-2.0 license. Both implement ODPAPI v1 and use the shared
 
 | Adapter | Integration target | Supported operations | Documentation |
 | --- | --- | --- | --- |
-| Iron Mountain SecureSync | Read-only, report-backed inventory imported over SFTP into a local Berkeley DB snapshot and served through Apache | Query, List, Find, Inventory | [Build, configuration, and limitations](adapter-ironmountain/README.md) |
+| Iron Mountain | Read-only inventory from reports created by SecureSync, imported over SFTP into a local Berkeley DB snapshot and served through Apache | Query, List, Find, Inventory | [Build, configuration, and limitations](adapter-ironmountain/README.md) |
 | Linux SCSI media changer | Read-only inventory of configured Linux SCSI media changers, served through Apache with Podman deployment support | Query, List, Find, Inventory | [Build, configuration, and limitations](adapter-scsi/README.md) |
 
 Neither adapter supports Move, Add, Update, or Scan.
 
-The Iron Mountain SecureSync adapter is an independent project and is not
+The Iron Mountain adapter is an independent project and is not
 maintained or endorsed by Iron Mountain.
